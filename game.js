@@ -11,9 +11,9 @@ var Game = function ($, Box2D, canvasSelector) {
 
   var scale = widthInPixels/width; // world is 40m wide
 
-  var germSize = 2;
+  var germSize = 1.5;
 
-  var stepsInSecond = 20;
+  var stepsInSecond = 30;
   var timeStep = 1/stepsInSecond;
 
   var doublingPeriod = 3; // in seconds
@@ -21,7 +21,7 @@ var Game = function ($, Box2D, canvasSelector) {
   var b2 = Box2DWorld(Box2D);
 
   var velocityIterations = 8;
-  var positionIterations = 20;
+  var positionIterations = 100;
 
   var Condition = { continuing: 0, failed: 1, success: 2};
 
@@ -121,7 +121,7 @@ var Game = function ($, Box2D, canvasSelector) {
       for (b = b2.world.GetBodyList(); b; b = b.GetNext()) {
         if (userData = b.GetUserData()) { 
           count += 1;
-          if (b.GetPosition().y < 10) {
+          if (b.GetPosition().y < height/6) {
             gameState.condition = Condition.failed;
           }
 
@@ -190,7 +190,7 @@ var Game = function ($, Box2D, canvasSelector) {
 };
 
 jQuery(document).ready(function() { 
-  var aspect = 1, h = $(window).height(), w = h*aspect;
+  var aspect = 1, h = $(window).height() - $('#content').height()*1.1, w = h*aspect;
   $('#canvas').attr('width', w);
   $('#canvas').attr('height', h);
 

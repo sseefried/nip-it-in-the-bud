@@ -12,7 +12,7 @@ var Game = function ($, Box2D) {
 
   var germSize = 2;
 
-  var stepsInSecond = 30;
+  var stepsInSecond = 60;
   var timeStep = 1/stepsInSecond;
 
   var doublingPeriod = 3; // in seconds
@@ -20,7 +20,10 @@ var Game = function ($, Box2D) {
   var b2 = Box2DWorld(Box2D);
 
   var velocityIterations = 8;
-  var positionIterations = 3;
+  var positionIterations = 20;
+
+  var Condition = { continuing: 0, failed: 1, success: 2};
+
 
  var setupDebugDraw = function() {
     var debugDraw = new b2.DebugDraw();
@@ -65,9 +68,20 @@ var Game = function ($, Box2D) {
 
   }
 
+  var collideWithMouse = function(body, mousePos) {
+    var fixture, vec = new b2.Vec2(mousePos.x, mousePos.y);
+    for (fixture = body.GetFixtureList(); fixture; fixture = fixture.GetNext()) {
+      if (fixture.TestPoint(vec)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+
   var start = function() {
 
-    var gameState = { step: 0, failed: false },
+    var gameState = { step: 0, condition: Condition.continuing },
         context = $('#canvas')[0].getContext("2d");
 
     createBeaker({x: 20, y: 19.5, width: 36, height: 20, wallWidth: 1});
@@ -76,34 +90,38 @@ var Game = function ($, Box2D) {
     var mouseHandler = function(selector) { 
       var offset = $(selector).offset();
       return function(e) {
-        var aabb = new b2.AABB(), x = (e.pageX - offset.left)/scale, 
-                                  y = (e.pageY - offset.top)/scale,
-            delta = 0.1, b, userData, body;
+        var aabb = new b2.AABB(),
+             mousePos = { x : (e.pageX - offset.left)/scale, 
+                          y : (e.pageY - offset.top)/scale },
+            body, numGerms = 0;
 
-            console.log(x,y);
 
-        aabb.lowerBound = { x: x-delta, y: y-delta};
-        aabb.upperBound = { x: x+delta, y: y+delta};
-        b2.world.QueryAABB(function(data) {
-          var body = data.GetBody();
+            // TODO: I really should be checking a bounding box, but instead
+            // I just check every object in the world.
+        for (body = b2.world.GetBodyList(); body; body = body.GetNext()) {
           if (body.GetUserData()) {
-            b2.world.DestroyBody(body);
-            body = null;
+            if (collideWithMouse(body, mousePos)) {
+              b2.world.DestroyBody(body);
+            } else {
+              numGerms += 1; // still alive
+            }
           }
-        }, aabb);
-
+        }
+        if (numGerms === 0) { 
+          gameState.condition = Condition.success;
+        }
       };
     };
 
     $('#canvas').click(mouseHandler('#canvas'));
 
     var multiplyGerms = function() {
-      var newPos;
+      var newPos, count = 0;
       for (b = b2.world.GetBodyList(); b; b = b.GetNext()) {
         if (userData = b.GetUserData()) { 
-
+          count += 1;
           if (b.GetPosition().y < 10) {
-            gameState.failed = true;
+            gameState.condition = Condition.failed;
           }
 
           if (gameState.step === (doublingPeriod*stepsInSecond - 1)) {
@@ -123,16 +141,39 @@ var Game = function ($, Box2D) {
 
     }
 
+    var failedMessage = function() {
+      context.fillStyle = "red";
+      context.font = "bold 64px Helvetica";
+      context.textAlign = "center";
+      context.fillText("FAILED!", widthInPixels/2, heightInPixels/5)
+
+    }
+
+    var successMessage = function() {
+      context.fillStyle = "green";
+      context.font = "bold 64px Helvetica";
+      context.textAlign = "center";
+      context.fillText("Success!", widthInPixels/2, heightInPixels/5)
+    }
+
+
     var animate = function() {
       b2.world.Step(timeStep, velocityIterations, positionIterations);
       gameState.step = (gameState.step + 1) % (doublingPeriod * stepsInSecond);
       b2.world.ClearForces();
       b2.world.DrawDebugData();
       multiplyGerms();
-      if ( !gameState.failed ) { 
-        setTimeout(function() { animate(); }, timeStep*1000);
-      } else {
-        failedMessage();
+
+      switch (gameState.condition) {
+        case Condition.continuing:
+          setTimeout(function() { animate(); }, timeStep*1000);
+          break;
+        case Condition.failed: 
+          failedMessage();
+          break;
+        case Condition.success:
+          successMessage();
+          break;
       }
     };
 

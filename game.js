@@ -183,8 +183,13 @@ var Game = function ($, Box2D, canvasSelector) {
 
   };
 
+  var destroy = function() {
+    b2.world = null;
+  }
+
   return ({
-    start: start
+    start:   start,
+    destroy: destroy
   })
 
 };
@@ -195,4 +200,11 @@ jQuery(document).ready(function() {
   $('#canvas').attr('height', h);
 
   game = Game(jQuery, Box2D, '#canvas');
+
+  $('#reset').click(function() {
+    game.destroy();
+    game = Game(jQuery, Box2D, '#canvas');
+    game.start();
+  });
+
 });

@@ -1,9 +1,10 @@
-var Game = function ($, Box2D) {
+var Game = function ($, Box2D, canvasSelector) {
 
   // sseefried: I don't want to use magic numbers in my code, so I'm defining the
   //   width and height for now. FIXME: get this directly from the canvas.
-  var widthInPixels  = 640;
-  var heightInPixels = 480;
+  var canvas = $(canvasSelector)[0];
+  var widthInPixels  = $(canvas).width();
+  var heightInPixels = $(canvas).height();
 
   var width = 40;
   var height = heightInPixels/widthInPixels * width;
@@ -12,7 +13,7 @@ var Game = function ($, Box2D) {
 
   var germSize = 2;
 
-  var stepsInSecond = 60;
+  var stepsInSecond = 20;
   var timeStep = 1/stepsInSecond;
 
   var doublingPeriod = 3; // in seconds
@@ -27,7 +28,7 @@ var Game = function ($, Box2D) {
 
  var setupDebugDraw = function() {
     var debugDraw = new b2.DebugDraw();
-    context = document.getElementById('canvas').getContext('2d');
+    context = canvas.getContext('2d');
 
     // rshankar: Use this canvas context for drawing the debugging screen
     debugDraw.SetSprite(context);
@@ -82,9 +83,9 @@ var Game = function ($, Box2D) {
   var start = function() {
 
     var gameState = { step: 0, condition: Condition.continuing },
-        context = $('#canvas')[0].getContext("2d");
+        context = canvas.getContext("2d");
 
-    createBeaker({x: 20, y: 19.5, width: 36, height: 20, wallWidth: 1});
+    createBeaker({x: 20, y: height/2, width: 36, height: height*2/3, wallWidth: 1});
     createGerm({x: width/2, y: 25});
 
     var mouseHandler = function(selector) { 
@@ -113,7 +114,7 @@ var Game = function ($, Box2D) {
       };
     };
 
-    $('#canvas').click(mouseHandler('#canvas'));
+    $(canvas).click(mouseHandler(canvasSelector));
 
     var multiplyGerms = function() {
       var newPos, count = 0;
@@ -135,7 +136,7 @@ var Game = function ($, Box2D) {
 
     var failedMessage = function() {
       context.fillStyle = "red";
-      context.font = "bold 64px Helvetica";
+      context.font = "bold " + Math.round(widthInPixels/10) + "px Helvetica";
       context.textAlign = "center";
       context.fillText("FAILED!", widthInPixels/2, heightInPixels/5)
 
@@ -143,7 +144,7 @@ var Game = function ($, Box2D) {
 
     var failedMessage = function() {
       context.fillStyle = "red";
-      context.font = "bold 64px Helvetica";
+      context.font = "bold " + Math.round(widthInPixels/10) + "px Helvetica";
       context.textAlign = "center";
       context.fillText("FAILED!", widthInPixels/2, heightInPixels/5)
 
@@ -188,4 +189,10 @@ var Game = function ($, Box2D) {
 
 };
 
-var game = Game(jQuery, Box2D);
+jQuery(document).ready(function() { 
+  var aspect = 1, h = $(window).height(), w = h*aspect;
+  $('#canvas').attr('width', w);
+  $('#canvas').attr('height', h);
+
+  game = Game(jQuery, Box2D, '#canvas');
+});

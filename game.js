@@ -95,8 +95,6 @@ var Game = function ($, Box2D, canvasSelector) {
              mousePos = { x : (e.pageX - offset.left)/scale, 
                           y : (e.pageY - offset.top)/scale },
             body, numGerms = 0;
-
-
             // TODO: I really should be checking a bounding box, but instead
             // I just check every object in the world.
         for (body = b2.world.GetBodyList(); body; body = body.GetNext()) {
@@ -114,8 +112,8 @@ var Game = function ($, Box2D, canvasSelector) {
       };
     };
 
-    $(canvas).unbind("click");
-    $(canvas).click(mouseHandler(canvasSelector));
+    $(document).unbind("click");
+    $(document).click(mouseHandler(canvasSelector));
 
     var multiplyGerms = function() {
       var newPos, count = 0;

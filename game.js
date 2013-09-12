@@ -114,6 +114,7 @@ var Game = function ($, Box2D, canvasSelector) {
       };
     };
 
+    $(canvas).unbind("click");
     $(canvas).click(mouseHandler(canvasSelector));
 
     var multiplyGerms = function() {

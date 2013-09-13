@@ -105,7 +105,8 @@ var Game = function ($, Box2D, canvasSelector) {
 
       $(document).click(handler);
       $(document).on("touchstart", function(event) {
-        event.originalEvent.preventDefault();
+        // prevent touch event also triggering mouse click event with 'preventDefault'
+        event.originalEvent.preventDefault(); 
         handler();
       });
     };
@@ -174,6 +175,7 @@ var Game = function ($, Box2D, canvasSelector) {
       var i, ts, s, e = event.originalEvent,
           offset = $('#canvas').offset(),
           x,y;
+       // prevent touch event also triggering mouse click event with 'preventDefault'
        e.preventDefault();
        ts = e.touches;
        for (i=0; i < ts.length; i++) {

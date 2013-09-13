@@ -166,7 +166,7 @@ var Game = function ($, Box2D, canvasSelector) {
       };
     };
 
-    $(document).unbind("click"); 
+    $(document).unbind("click");
     $(document).unbind("touchstart"); 
     $(document).click(mouseHandler(canvasSelector));
 

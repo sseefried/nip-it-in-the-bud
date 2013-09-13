@@ -1,4 +1,33 @@
+var jQueryExtend = function(jQuery) {
+  var $ = jQuery;
+  //
+  // A function that adds a mouse handler for
+  //
+  var proto = $(window).__proto__;
+  proto.clickOrTouchstart = function(handler) {
+    $(this).click(handler);
+    $(this).on("touchstart", function(event) {
+      var e = event.originalEvent, ts;
+      // preventDefault prevents touch things as "double tap to zoom"
+      // and "pinch and zoom" on mobile devices. You may not want this.
+      e.preventDefault();
+      ts = e.touches;
+      for (i=0; i < ts.length; i++) {
+        handler(ts[i]);
+      }
+    });
+  };
+
+  proto.unbindClickAndTouchstart = function(handler) {
+    $(this).unbind("click");
+    $(this).unbind("touchstart");
+  };
+
+};
+
+
 var Game = function ($, Box2D, canvasSelector) {
+  jQueryExtend($);
 
   // sseefried: I don't want to use magic numbers in my code, so I'm defining the
   //   width and height for now. FIXME: get this directly from the canvas.
@@ -90,15 +119,13 @@ var Game = function ($, Box2D, canvasSelector) {
     $('#level').html("Level: " + startingGerms);
 
     var resetHandler = function() {
-      $('#reset').unbind("click");
-      $('#reset').unbind("touchstart");
+      $('#reset').unbindClickAndTouchstart();
       destroy();
       start(1);
     };
 
 
-    $('#reset').click(resetHandler);
-    $('#reset').on("touchstart", resetHandler);
+    $('#reset').clickOrTouchstart(resetHandler);
 
 
     var clickToStartNewGame = function() {
@@ -108,12 +135,7 @@ var Game = function ($, Box2D, canvasSelector) {
         start(gameState.startingGerms + 1);
       };
 
-      $(document).click(handler);
-      $(document).on("touchstart", function(event) {
-        // prevent touch event also triggering mouse click event with 'preventDefault'
-        event.originalEvent.preventDefault();
-        handler();
-      });
+      $(document).clickOrTouchstart(handler);
     };
 
     var createGerm = function(o) {
@@ -162,35 +184,16 @@ var Game = function ($, Box2D, canvasSelector) {
 
 
     var mouseHandler = function(selector) {
-      var offset = $(selector).offset();
       return function(e) {
+        var offset = $(selector).offset();
         var mousePos = { x : (e.pageX - offset.left)/scale,
-                          y : (e.pageY - offset.top)/scale };
+                         y : (e.pageY - offset.top)/scale };
         killGerm(mousePos);
-//        $('#debug-mouse').html("mouse: " + mousePos.x + "," + mousePos.y);
       };
     };
 
-    $(document).unbind("click");
-    $(document).unbind("touchstart");
-    $(document).click(mouseHandler(canvasSelector));
-
-
-    $(document).on("touchstart", function(event) {
-      var i, ts, s, e = event.originalEvent,
-          offset = $('#canvas').offset(),
-          x,y;
-       // prevent touch event also triggering mouse click event with 'preventDefault'
-       e.preventDefault();
-       ts = e.touches;
-       for (i=0; i < ts.length; i++) {
-         x = (ts[i].pageX - offset.left)/scale;
-         y = (ts[i].pageY - offset.top)/scale;
-         killGerm({x: x, y: y});
-//         $('#debug-touch').html("touch: " + ts[i].pageX + "," + ts[i].pageY);
-//         $('#debug-touch').html("touch: " + x + "," + y);
-       }
-    });
+    $(document).unbindClickAndTouchstart();
+    $(document).clickOrTouchstart(mouseHandler(canvasSelector));
 
     var multiplyGerms = function() {
       var pos, count = 0, circleShape, r, t;
@@ -286,11 +289,14 @@ var Game = function ($, Box2D, canvasSelector) {
 };
 
 jQuery(document).ready(function() {
-  var aspect = 1, h = $(window).height() - $('#content').height()*1.1, w = h*aspect;
-  $('#canvas').attr('width', w);
-  $('#canvas').attr('height', h);
+  var aspect = 1,
+      h = $(window).height() - $('#content').height()*1.1,
+      w = $(window).width(),
+      min = Math.min(w,h);
+  $('#canvas').attr('width', min);
+  $('#canvas').attr('height', min);
 
   game = Game(jQuery, Box2D, '#canvas');
-
+//  $('#debug').html("height = " + window.innerHeight);
 
 });

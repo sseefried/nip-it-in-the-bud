@@ -18,7 +18,8 @@ var Game = function ($, Box2D, canvasSelector) {
 
   var doublingPeriod = 3; // in seconds
 
-  var b2 = Box2DWorld(Box2D);
+  var b2;
+  var gameState;
 
   var velocityIterations = 8;
   var positionIterations = 100;
@@ -74,25 +75,60 @@ var Game = function ($, Box2D, canvasSelector) {
   }
 
 
-  var start = function() {
+  var growthRateForSteps = function(t) {
+    return Math.pow(2,1/t);
+  }
 
-    var gameState = { step: 0, condition: Condition.continuing },
-        context   = canvas.getContext("2d");
+
+  var start = function(startingGerms) {
+    b2 = Box2DWorld(Box2D);
+    startingGerms = startingGerms || 1;
+        context   = canvas.getContext("2d"), i;
+
+    gameState = { step: 0, condition: Condition.continuing, startingGerms: startingGerms };
+
+    $('#level').html("Level: " + startingGerms);
+
+    $('#reset').click(function() {
+      $('#reset').unbind("click");
+      destroy();
+      start(1);
+    });
+
+
+    var clickToStartNewGame = function() {
+      $(document).unbind("click");
+      $(document).click(function() {
+        var newGame;
+        destroy();
+        start(gameState.startingGerms + 1);
+      });
+    };
 
     var createGerm = function(o) {
-      var randomSize = germSize * (1 + Math.random());
       var body = b2.createDynamicBody({x: o.x, y: o.y, angularDamping: 0.7},
                            [{ density: 1.0,
                               friction: 1.0,
                               restitution: 0.0, 
-                              shape: new b2.CircleShape(randomSize) }]);
-      body.SetUserData({ multiplyAt: gameState.step + randomMultiplyTime()});
+                              shape: new b2.CircleShape(o.r) }]),
+          t = randomMultiplyTime();
+      body.SetUserData({ multiplyAt: gameState.step + t,
+                         growthRate: growthRateForSteps(t) });
       return body;
+    };
+
+    var createGerms = function(n) {
+      for (i=0; i < n; i++) {
+        createGerm({x: width/2 + width/2*(Math.random() - 0.5),
+                    y: 25,
+                    r: germSize * (0.8 + Math.random() * 0.4)});
+      }
     };
 
 
     createBeaker({x: 20, y: height/2, width: 36, height: height*2/3, wallWidth: 1});
-    createGerm({x: width/2, y: 25});
+    createGerms(gameState.startingGerms);
+
 
     var mouseHandler = function(selector) { 
       var offset = $(selector).offset();
@@ -123,7 +159,7 @@ var Game = function ($, Box2D, canvasSelector) {
 
 
     var multiplyGerms = function() {
-      var newPos, count = 0;
+      var pos, count = 0, circleShape, r, t;
       for (b = b2.world.GetBodyList(); b; b = b.GetNext()) {
         if (userData = b.GetUserData()) { 
           count += 1;
@@ -132,12 +168,16 @@ var Game = function ($, Box2D, canvasSelector) {
           }
 
           if (gameState.step === userData.multiplyAt) {
-            newPos = b.GetPosition();
-            newPos.x += 0.1;
+            pos = b.GetPosition();
+            circleShape = b.GetFixtureList().GetShape();
             // Update multiply time for current germ
-            userData.multiplyAt = gameState.step + randomMultiplyTime();
+            r = circleShape.GetRadius()/2;
+            circleShape.SetRadius(r);
+            t = randomMultiplyTime();
+            b.SetUserData({ multiplyAt: gameState.step + t,
+                            growthRate: growthRateForSteps(t) });
             // create new germ
-            createGerm(newPos);
+            createGerm({x: pos.x, y: pos.y, r: r});
           }
         }
       }
@@ -154,11 +194,24 @@ var Game = function ($, Box2D, canvasSelector) {
       context.fillStyle = "green";
       context.font = "bold "+ Math.round(widthInPixels/10) + "px Helvetica";
       context.textAlign = "center";
-      context.fillText("Success!", widthInPixels/2, heightInPixels/5)
+      context.fillText("Success!", widthInPixels/2, heightInPixels/5);
+      context.fillStyle ="#333333";
+      context.font = "bold " + Math.round(widthInPixels/30) + "px Helvetica";
+      context.fillText("Click to continue", widthInPixels/2, 2*heightInPixels/5);
     }
 
+    var growGerms = function() {
+      var body, fixture, shape, userData;
+      for (body = b2.world.GetBodyList(); body; body = body.GetNext()) {
+        if (userData = body.GetUserData()) {
+          shape = body.GetFixtureList().GetShape();
+          shape.SetRadius(shape.GetRadius() * userData.growthRate);
+        }
+      }
+    }
 
     var animate = function() {
+
       b2.world.Step(timeStep, velocityIterations, positionIterations);
       gameState.step = (gameState.step + 1);
       b2.world.ClearForces();
@@ -167,15 +220,18 @@ var Game = function ($, Box2D, canvasSelector) {
 
       switch (gameState.condition) {
         case Condition.continuing:
-          setTimeout(function() { animate(); }, timeStep*1000);
+          growGerms();
+          gameState.animateTimeoutId = setTimeout(function() { animate(); }, timeStep*1000);
           break;
         case Condition.failed: 
           failedMessage();
           break;
         case Condition.success:
           successMessage();
+          clickToStartNewGame();
           break;
       }
+
     };
 
     setupDebugDraw();
@@ -184,6 +240,7 @@ var Game = function ($, Box2D, canvasSelector) {
   };
 
   var destroy = function() {
+    clearTimeout(gameState.animateTimeoutId);
     b2.world = null;
   }
 
@@ -201,10 +258,5 @@ jQuery(document).ready(function() {
 
   game = Game(jQuery, Box2D, '#canvas');
 
-  $('#reset').click(function() {
-    game.destroy();
-    game = Game(jQuery, Box2D, '#canvas');
-    game.start();
-  });
 
 });

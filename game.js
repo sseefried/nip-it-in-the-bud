@@ -111,7 +111,7 @@ var Game = function ($, Box2D, canvasSelector) {
       $(document).click(handler);
       $(document).on("touchstart", function(event) {
         // prevent touch event also triggering mouse click event with 'preventDefault'
-        event.originalEvent.preventDefault(); 
+        event.originalEvent.preventDefault();
         handler();
       });
     };
@@ -120,7 +120,7 @@ var Game = function ($, Box2D, canvasSelector) {
       var body = b2.createDynamicBody({x: o.x, y: o.y, angularDamping: 0.7},
                            [{ density: 1.0,
                               friction: 1.0,
-                              restitution: 0.0, 
+                              restitution: 0.0,
                               shape: new b2.CircleShape(o.r) }]),
           t = randomMultiplyTime();
       body.SetUserData({ multiplyAt: gameState.step + t,
@@ -154,17 +154,17 @@ var Game = function ($, Box2D, canvasSelector) {
           }
         }
       }
-      if (numGerms === 0) { 
+      if (numGerms === 0) {
         gameState.condition = Condition.success;
       }
 
     };
 
 
-    var mouseHandler = function(selector) { 
+    var mouseHandler = function(selector) {
       var offset = $(selector).offset();
       return function(e) {
-        var mousePos = { x : (e.pageX - offset.left)/scale, 
+        var mousePos = { x : (e.pageX - offset.left)/scale,
                           y : (e.pageY - offset.top)/scale };
         killGerm(mousePos);
 //        $('#debug-mouse').html("mouse: " + mousePos.x + "," + mousePos.y);
@@ -172,7 +172,7 @@ var Game = function ($, Box2D, canvasSelector) {
     };
 
     $(document).unbind("click");
-    $(document).unbind("touchstart"); 
+    $(document).unbind("touchstart");
     $(document).click(mouseHandler(canvasSelector));
 
 
@@ -195,7 +195,7 @@ var Game = function ($, Box2D, canvasSelector) {
     var multiplyGerms = function() {
       var pos, count = 0, circleShape, r, t;
       for (b = b2.world.GetBodyList(); b; b = b.GetNext()) {
-        if (userData = b.GetUserData()) { 
+        if (userData = b.GetUserData()) {
           count += 1;
           if (b.GetPosition().y < height/6) {
             gameState.condition = Condition.failed;
@@ -257,7 +257,7 @@ var Game = function ($, Box2D, canvasSelector) {
           growGerms();
           gameState.animateTimeoutId = setTimeout(function() { animate(); }, timeStep*1000);
           break;
-        case Condition.failed: 
+        case Condition.failed:
           failedMessage();
           break;
         case Condition.success:
@@ -285,7 +285,7 @@ var Game = function ($, Box2D, canvasSelector) {
 
 };
 
-jQuery(document).ready(function() { 
+jQuery(document).ready(function() {
   var aspect = 1, h = $(window).height() - $('#content').height()*1.1, w = h*aspect;
   $('#canvas').attr('width', w);
   $('#canvas').attr('height', h);

@@ -224,14 +224,14 @@ var Game = function ($, Box2D, canvasSelector) {
       context.fillStyle = "red";
       context.font = "bold " + Math.round(widthInPixels/10) + "px Helvetica";
       context.textAlign = "center";
-      context.fillText("FAILED!", widthInPixels/2, heightInPixels/5)
+      context.fillText("INFECTED!", widthInPixels/2, heightInPixels/5)
     }
 
     var successMessage = function() {
       context.fillStyle = "green";
-      context.font = "bold "+ Math.round(widthInPixels/10) + "px Helvetica";
+      context.font = "bold "+ Math.round(widthInPixels/15) + "px Helvetica";
       context.textAlign = "center";
-      context.fillText("Success!", widthInPixels/2, heightInPixels/5);
+      context.fillText("Epidemic averted!", widthInPixels/2, heightInPixels/5);
       context.fillStyle ="#333333";
       context.font = "bold " + Math.round(widthInPixels/30) + "px Helvetica";
       context.fillText("Click to continue", widthInPixels/2, 2*heightInPixels/5);

@@ -11,7 +11,7 @@ var Game = function ($, Box2D, canvasSelector) {
 
   var scale = widthInPixels/width; // world is 40m wide
 
-  var germSize = 1.5;
+  var germSize = 1;
 
   var stepsInSecond = 30;
   var timeStep = 1/stepsInSecond;
@@ -58,16 +58,10 @@ var Game = function ($, Box2D, canvasSelector) {
 
   };
 
-  var createGerm = function(o) {
-    var body = b2.createDynamicBody({x: o.x, y: o.y, angularDamping: 0.7},
-                         [{ density: 1.0,
-                            friction: 1.0,
-                            restitution: 0.0, 
-                            shape: new b2.CircleShape(germSize) }]);
-    body.SetUserData({ type: "germ"});
-    return body;
-
-  }
+  var randomMultiplyTime = function() {
+    // +1 is because it cannot be zero
+    return Math.round(Math.random() * 2 * doublingPeriod * stepsInSecond) + 1;
+  };
 
   var collideWithMouse = function(body, mousePos) {
     var fixture, vec = new b2.Vec2(mousePos.x, mousePos.y);
@@ -83,7 +77,19 @@ var Game = function ($, Box2D, canvasSelector) {
   var start = function() {
 
     var gameState = { step: 0, condition: Condition.continuing },
-        context = canvas.getContext("2d");
+        context   = canvas.getContext("2d");
+
+    var createGerm = function(o) {
+      var randomSize = germSize * (1 + Math.random());
+      var body = b2.createDynamicBody({x: o.x, y: o.y, angularDamping: 0.7},
+                           [{ density: 1.0,
+                              friction: 1.0,
+                              restitution: 0.0, 
+                              shape: new b2.CircleShape(randomSize) }]);
+      body.SetUserData({ multiplyAt: gameState.step + randomMultiplyTime()});
+      return body;
+    };
+
 
     createBeaker({x: 20, y: height/2, width: 36, height: height*2/3, wallWidth: 1});
     createGerm({x: width/2, y: 25});
@@ -115,6 +121,7 @@ var Game = function ($, Box2D, canvasSelector) {
     $(document).unbind("click");
     $(document).click(mouseHandler(canvasSelector));
 
+
     var multiplyGerms = function() {
       var newPos, count = 0;
       for (b = b2.world.GetBodyList(); b; b = b.GetNext()) {
@@ -124,9 +131,12 @@ var Game = function ($, Box2D, canvasSelector) {
             gameState.condition = Condition.failed;
           }
 
-          if (gameState.step === (doublingPeriod*stepsInSecond - 1)) {
+          if (gameState.step === userData.multiplyAt) {
             newPos = b.GetPosition();
             newPos.x += 0.1;
+            // Update multiply time for current germ
+            userData.multiplyAt = gameState.step + randomMultiplyTime();
+            // create new germ
             createGerm(newPos);
           }
         }
@@ -138,20 +148,11 @@ var Game = function ($, Box2D, canvasSelector) {
       context.font = "bold " + Math.round(widthInPixels/10) + "px Helvetica";
       context.textAlign = "center";
       context.fillText("FAILED!", widthInPixels/2, heightInPixels/5)
-
-    }
-
-    var failedMessage = function() {
-      context.fillStyle = "red";
-      context.font = "bold " + Math.round(widthInPixels/10) + "px Helvetica";
-      context.textAlign = "center";
-      context.fillText("FAILED!", widthInPixels/2, heightInPixels/5)
-
     }
 
     var successMessage = function() {
       context.fillStyle = "green";
-      context.font = "bold 64px Helvetica";
+      context.font = "bold "+ Math.round(widthInPixels/10) + "px Helvetica";
       context.textAlign = "center";
       context.fillText("Success!", widthInPixels/2, heightInPixels/5)
     }
@@ -159,7 +160,7 @@ var Game = function ($, Box2D, canvasSelector) {
 
     var animate = function() {
       b2.world.Step(timeStep, velocityIterations, positionIterations);
-      gameState.step = (gameState.step + 1) % (doublingPeriod * stepsInSecond);
+      gameState.step = (gameState.step + 1);
       b2.world.ClearForces();
       b2.world.DrawDebugData();
       multiplyGerms();

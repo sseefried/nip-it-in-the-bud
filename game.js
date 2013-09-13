@@ -97,11 +97,16 @@ var Game = function ($, Box2D, canvasSelector) {
 
 
     var clickToStartNewGame = function() {
-      $(document).unbind("click");
-      $(document).click(function() {
+      var handler =function() {
         var newGame;
         destroy();
         start(gameState.startingGerms + 1);
+      };
+
+      $(document).click(handler);
+      $(document).on("touchstart", function(event) {
+        event.originalEvent.preventDefault();
+        handler();
       });
     };
 
@@ -130,33 +135,54 @@ var Game = function ($, Box2D, canvasSelector) {
     createGerms(gameState.startingGerms);
 
 
+    var killGerm = function(mousePos) {
+      var body, numGerms = 0;
+          // TODO: I really should be checking a bounding box, but instead
+          // I just check every object in the world.
+      for (body = b2.world.GetBodyList(); body; body = body.GetNext()) {
+        if (body.GetUserData()) {
+          if (collideWithMouse(body, mousePos)) {
+            b2.world.DestroyBody(body);
+          } else {
+            numGerms += 1; // still alive
+          }
+        }
+      }
+      if (numGerms === 0) { 
+        gameState.condition = Condition.success;
+      }
+
+    };
+
+
     var mouseHandler = function(selector) { 
       var offset = $(selector).offset();
       return function(e) {
-        var aabb = new b2.AABB(),
-             mousePos = { x : (e.pageX - offset.left)/scale, 
-                          y : (e.pageY - offset.top)/scale },
-            body, numGerms = 0;
-            // TODO: I really should be checking a bounding box, but instead
-            // I just check every object in the world.
-        for (body = b2.world.GetBodyList(); body; body = body.GetNext()) {
-          if (body.GetUserData()) {
-            if (collideWithMouse(body, mousePos)) {
-              b2.world.DestroyBody(body);
-            } else {
-              numGerms += 1; // still alive
-            }
-          }
-        }
-        if (numGerms === 0) { 
-          gameState.condition = Condition.success;
-        }
+        var mousePos = { x : (e.pageX - offset.left)/scale, 
+                          y : (e.pageY - offset.top)/scale };
+        killGerm(mousePos);
+//        $('#debug-mouse').html("mouse: " + mousePos.x + "," + mousePos.y);
       };
     };
 
-    $(document).unbind("click");
+    $(document).unbind("click"); 
+    $(document).unbind("touchstart"); 
     $(document).click(mouseHandler(canvasSelector));
 
+
+    $(document).on("touchstart", function(event) {
+      var i, ts, s, e = event.originalEvent,
+          offset = $('#canvas').offset(),
+          x,y;
+       e.preventDefault();
+       ts = e.touches;
+       for (i=0; i < ts.length; i++) {
+         x = (ts[i].screenX - offset.left)/scale;
+         y = (ts[i].screenY - offset.top)/scale; 
+         killGerm({x: x, y: y});
+//         $('#debug-touch').html("touch: " + x + "," + y);
+       }
+    });
 
     var multiplyGerms = function() {
       var pos, count = 0, circleShape, r, t;

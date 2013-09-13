@@ -89,11 +89,16 @@ var Game = function ($, Box2D, canvasSelector) {
 
     $('#level').html("Level: " + startingGerms);
 
-    $('#reset').click(function() {
+    var resetHandler = function() {
       $('#reset').unbind("click");
+      $('#reset').unbind("touchstart");
       destroy();
       start(1);
-    });
+    };
+
+
+    $('#reset').click(resetHandler);
+    $('#reset').on("touchstart", resetHandler);
 
 
     var clickToStartNewGame = function() {
@@ -179,9 +184,10 @@ var Game = function ($, Box2D, canvasSelector) {
        e.preventDefault();
        ts = e.touches;
        for (i=0; i < ts.length; i++) {
-         x = (ts[i].screenX - offset.left)/scale;
-         y = (ts[i].screenY - offset.top)/scale; 
+         x = (ts[i].pageX - offset.left)/scale;
+         y = (ts[i].pageY - offset.top)/scale;
          killGerm({x: x, y: y});
+//         $('#debug-touch').html("touch: " + ts[i].pageX + "," + ts[i].pageY);
 //         $('#debug-touch').html("touch: " + x + "," + y);
        }
     });

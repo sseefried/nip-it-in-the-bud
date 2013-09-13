@@ -177,7 +177,7 @@ var Game = function ($, Box2D, canvasSelector) {
             b.SetUserData({ multiplyAt: gameState.step + t,
                             growthRate: growthRateForSteps(t) });
             // create new germ
-            createGerm({x: pos.x, y: pos.y, r: r});
+            createGerm({x: pos.x+0.2, y: pos.y, r: r});
           }
         }
       }

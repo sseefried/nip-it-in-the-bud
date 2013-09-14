@@ -1,3 +1,14 @@
+var propertiesOf = function(o) {
+  var p, a = [];
+  for (p in o) {
+    if (o.hasOwnProperty(p)) {
+      a.push(p);
+    }
+  }
+  return a;
+};
+
+
 var jQueryExtend = function(jQuery) {
   var $ = jQuery;
   //
@@ -22,12 +33,14 @@ var jQueryExtend = function(jQuery) {
     $(this).unbind("click");
     $(this).unbind("touchstart");
   };
-
 };
 
 
 var Game = function ($, Box2D, canvasSelector) {
-  jQueryExtend($);
+  jQueryExtend($); //
+
+  var Antibiotics = { Penicillin: 0 };
+
 
   // sseefried: I don't want to use magic numbers in my code, so I'm defining the
   //   width and height for now. FIXME: get this directly from the canvas.
@@ -48,7 +61,7 @@ var Game = function ($, Box2D, canvasSelector) {
   var doublingPeriod = 3; // in seconds
 
   var b2;
-  var gameState;
+
 
   var velocityIterations = 8;
   var positionIterations = 100;
@@ -56,7 +69,16 @@ var Game = function ($, Box2D, canvasSelector) {
   var Condition = { continuing: 0, failed: 1, success: 2};
 
 
- var setupDebugDraw = function() {
+  var initGameState = function() {
+    var i, props = propertiesOf(Antibiotics);
+    gameState = { score: 0, resistances: {}};
+    for (i in props) {
+      gameState.resistances[props[i]] = 0.10; // initial resistance chance of 0.10
+    }
+  };
+  initGameState();
+
+  var setupDebugDraw = function() {
     var debugDraw = new b2.DebugDraw();
     context = canvas.getContext('2d');
 
@@ -110,22 +132,7 @@ var Game = function ($, Box2D, canvasSelector) {
 
 
   var start = function(startingGerms) {
-    b2 = Box2DWorld(Box2D);
-    startingGerms = startingGerms || 1;
-        context   = canvas.getContext("2d"), i;
-
-    gameState = { step: 0, condition: Condition.continuing, startingGerms: startingGerms };
-
-    $('#level').html("Level: " + startingGerms);
-
-    var resetHandler = function() {
-      $('#reset').unbindClickAndTouchstart();
-      destroy();
-      start(1);
-    };
-
-
-    $('#reset').clickOrTouchstart(resetHandler);
+    var context   = canvas.getContext("2d"), i;
 
 
     var clickToStartNewGame = function() {
@@ -134,8 +141,18 @@ var Game = function ($, Box2D, canvasSelector) {
         destroy();
         start(gameState.startingGerms + 1);
       };
-
       $(document).clickOrTouchstart(handler);
+    };
+
+    //
+    // Randomly generates antiobiotics resistance for bacteria
+    //
+    var antibioticResistances = function() {
+      var i, resistances = {}, props = propertiesOf(Antibiotics);
+      for (i in props) {
+        resistances[props[i]] = Math.random() < gameState.resistances[props[i]] ? true : false;
+      };
+      return resistances;
     };
 
     var createGerm = function(o) {
@@ -146,11 +163,14 @@ var Game = function ($, Box2D, canvasSelector) {
                               shape: new b2.CircleShape(o.r) }]),
           t = randomMultiplyTime();
       body.SetUserData({ multiplyAt: gameState.step + t,
-                         growthRate: growthRateForSteps(t) });
+                         growthRate: growthRateForSteps(t),
+                         // either inherent or create for the first time
+                         resistances: (o.resistances || antibioticResistances()) });
       return body;
     };
 
     var createGerms = function(n) {
+      var i;
       for (i=0; i < n; i++) {
         createGerm({x: width/2 + width/2*(Math.random() - 0.5),
                     y: 25,
@@ -158,12 +178,20 @@ var Game = function ($, Box2D, canvasSelector) {
       }
     };
 
+    var killGermsWithAntibiotic = function(antibiotic) {
+      var body, germ;
+      for (body = b2.world.GetBodyList(); body; body = body.GetNext()) {
+        if (germ = body.GetUserData()) {
+          console.log(germ);
+          console.log(germ.resistances);
+          if (!germ.resistances[antibiotic]) {
+            b2.world.DestroyBody(body);
+          }
+        }
+      }
+    }
 
-    createBeaker({x: 20, y: height/2, width: 36, height: height*2/3, wallWidth: 1});
-    createGerms(gameState.startingGerms);
-
-
-    var killGerm = function(mousePos) {
+    var killGermAtPos = function(mousePos) {
       var body, numGerms = 0;
           // TODO: I really should be checking a bounding box, but instead
           // I just check every object in the world.
@@ -171,6 +199,7 @@ var Game = function ($, Box2D, canvasSelector) {
         if (body.GetUserData()) {
           if (collideWithMouse(body, mousePos)) {
             b2.world.DestroyBody(body);
+            gameState.score += 1;
           } else {
             numGerms += 1; // still alive
           }
@@ -183,20 +212,18 @@ var Game = function ($, Box2D, canvasSelector) {
     };
 
 
-    var mouseHandler = function(selector) {
+    var posHandler = function(selector) {
       return function(e) {
         var offset = $(selector).offset();
         var mousePos = { x : (e.pageX - offset.left)/scale,
                          y : (e.pageY - offset.top)/scale };
-        killGerm(mousePos);
+        killGermAtPos(mousePos);
       };
     };
 
-    $(document).unbindClickAndTouchstart();
-    $(document).clickOrTouchstart(mouseHandler(canvasSelector));
 
     var multiplyGerms = function() {
-      var pos, count = 0, circleShape, r, t;
+      var pos, count = 0, b, circleShape, r, t;
       for (b = b2.world.GetBodyList(); b; b = b.GetNext()) {
         if (userData = b.GetUserData()) {
           count += 1;
@@ -211,10 +238,10 @@ var Game = function ($, Box2D, canvasSelector) {
             r = circleShape.GetRadius()/2;
             circleShape.SetRadius(r);
             t = randomMultiplyTime();
-            b.SetUserData({ multiplyAt: gameState.step + t,
-                            growthRate: growthRateForSteps(t) });
-            // create new germ
-            createGerm({x: pos.x+0.2, y: pos.y, r: r});
+            userData.multiplyAt = gameState.step + t;
+            userData.growthRate = growthRateForSteps(t);
+            // create new germ. Inherits resistances
+            createGerm({x: pos.x+0.2, y: pos.y, r: r, resistances: userData.resistances});
           }
         }
       }
@@ -250,10 +277,11 @@ var Game = function ($, Box2D, canvasSelector) {
     var animate = function() {
 
       b2.world.Step(timeStep, velocityIterations, positionIterations);
-      gameState.step = (gameState.step + 1);
+      gameState.step += 1;
       b2.world.ClearForces();
       b2.world.DrawDebugData();
       multiplyGerms();
+      $('#score').html("Score: " + gameState.score);
 
       switch (gameState.condition) {
         case Condition.continuing:
@@ -270,6 +298,37 @@ var Game = function ($, Box2D, canvasSelector) {
       }
 
     };
+
+
+    ///////////////////////////////////////////////////////////////
+    startingGerms = startingGerms || 1;
+
+    b2 = Box2DWorld(Box2D);
+
+
+    gameState.step = 0;
+    gameState.condition = Condition.continuing;
+    gameState.startingGerms = startingGerms;
+
+    createBeaker({x: 20, y: height/2, width: 36, height: height*2/3, wallWidth: 1});
+    createGerms(startingGerms);
+
+
+    $('#level').html("Level: " + startingGerms);
+
+    var resetHandler = function() {
+      $('#reset').unbindClickAndTouchstart();
+      initGameState();
+      destroy();
+      start(1);
+    };
+
+    $('#reset').clickOrTouchstart(resetHandler);
+    $(document).unbindClickAndTouchstart();
+    $(document).clickOrTouchstart(posHandler(canvasSelector));
+    $('#penicillin').clickOrTouchstart(function() {
+      killGermsWithAntibiotic("Penicillin");
+    })
 
     setupDebugDraw();
     animate();

@@ -43,10 +43,7 @@ var jQueryExtend = function(jQuery) {
 
 var Game = function ($, Box2D, canvasSelector) {
   jQueryExtend($); //
-
   var Antibiotics = { Penicillin: 50, Ciprofloxacin: 200 };
-
-
 
   // sseefried: I don't want to use magic numbers in my code, so I'm defining the
   //   width and height for now. FIXME: get this directly from the canvas.
@@ -168,8 +165,6 @@ var Game = function ($, Box2D, canvasSelector) {
 
     var handler = function(e) {
       $('#message').hide();
-      e.stopPropagation();
-
       if (gameState.animator) {
         animateId = setTimeout(gameState.animator.animateFun, timeStep*1000);
         gameState.animator.animateId = animateId;

@@ -44,8 +44,8 @@ var jQueryExtend = function(jQuery) {
 var Game = function ($, Box2D, canvasSelector) {
   jQueryExtend($); //
 
-//  var Antibiotics = { Penicillin: 50, Ciprofloxacin: 200 };
-  var Antibiotics = { Penicillin: 1, Ciprofloxacin: 10 };
+  var Antibiotics = { Penicillin: 50, Ciprofloxacin: 200 };
+
 
 
   // sseefried: I don't want to use magic numbers in my code, so I'm defining the

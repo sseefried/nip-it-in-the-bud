@@ -84,20 +84,17 @@ var Game = function ($, Box2D, canvasSelector) {
     for (i in props) {
       gameState.resistances[props[i]] = 0.10; // initial resistance chance of 0.10
     }
-  };
 
-  initGameState();
-
-  (function() {
-    var i, props = propertiesOf(Antibiotics);
+    $('#antibiotics').empty();
     for (i in props) {
       $('#antibiotics').append('<span id="' +
                                props[i] + '" style="display:none;"><a href="#">' + props[i] +
                               '</a><span id="'+ props[i]+ '-resistance">'+
                               resistanceString(gameState.resistances[props[i]]) +'</span></span>');
     }
+  };
 
-  })();
+  initGameState();
 
   var setupDebugDraw = function() {
     var debugDraw = new b2.DebugDraw();
@@ -401,6 +398,7 @@ var Game = function ($, Box2D, canvasSelector) {
       $('#message').hide();
       destroy(); // destroy must come before initGameState()
       $('#reset').unbindClickAndTouchstart();
+      $('#antiobiotics').html(''); // clear antibiotic links
       initGameState();
       start(1);
     };

@@ -43,6 +43,7 @@ var jQueryExtend = function(jQuery) {
 
 var Game = function ($, Box2D, canvasSelector) {
   jQueryExtend($); //
+//  var Antibiotics = { Penicillin: 2, Ciprofloxacin: 5 };
   var Antibiotics = { Penicillin: 50, Ciprofloxacin: 200 };
 
   // sseefried: I don't want to use magic numbers in my code, so I'm defining the
@@ -73,6 +74,9 @@ var Game = function ($, Box2D, canvasSelector) {
 
   var Condition = { continuing: 0, failed: 1, success: 2};
 
+  var resistanceString = function(r) {
+    return "(" + Math.round(r*100.0) + "%)";
+  }
 
   var initGameState = function() {
     var i, props = propertiesOf(Antibiotics);
@@ -86,10 +90,11 @@ var Game = function ($, Box2D, canvasSelector) {
 
   (function() {
     var i, props = propertiesOf(Antibiotics);
-
     for (i in props) {
-      $('#antibiotics').append('<a href="#" style="display: none;"id="' +
-                               props[i] + '">' + props[i] + '</a> ');
+      $('#antibiotics').append('<span id="' +
+                               props[i] + '" style="display:none;"><a href="#">' + props[i] +
+                              '</a><span id="'+ props[i]+ '-resistance">'+
+                              resistanceString(gameState.resistances[props[i]]) +'</span></span>');
     }
 
   })();
@@ -231,7 +236,7 @@ var Game = function ($, Box2D, canvasSelector) {
     };
 
     var killGermsWithAntibiotic = function(antibiotic) {
-      var body, germ, resist;
+      var body, germ, resist, newResist;
       for (body = b2.world.GetBodyList(); body; body = body.GetNext()) {
         if (germ = body.GetUserData()) {
           if (!germ.resistances[antibiotic]) {
@@ -242,8 +247,9 @@ var Game = function ($, Box2D, canvasSelector) {
       }
       // increase the chance that germs are resistant
       resist = gameState.resistances[antibiotic];
-      gameState.resistances[antibiotic] = Math.min(0.99, resist*resistanceIncrease);
-      console.log("Resistance of " + antibiotic + " increased to " + gameState.resistances[antibiotic]);
+      newResist = Math.min(0.99, resist*resistanceIncrease);
+      gameState.resistances[antibiotic] = newResist;
+      $('#' + antibiotic + '-resistance').html(resistanceString(newResist));
     }
 
     var killGermAtPos = function(mousePos) {
@@ -369,7 +375,7 @@ var Game = function ($, Box2D, canvasSelector) {
       };
 
       for (i in props) {
-        el = $('#' + props[i]);
+        el = $('#' + props[i] + ' a');
         el.unbindClickAndTouchstart();
         el.clickOrTouchstart(handler(props[i]));
       }
@@ -382,10 +388,9 @@ var Game = function ($, Box2D, canvasSelector) {
         if (!el.is(":visible") && gameState.score >= Antibiotics[props[i]]) {
           el.show();
           showMessage('<p>Antibiotic "'+ props[i] +'" enabled!</p>' +
-                      '<p>A small portion of germs per level may be immune to this antibiotic. ' +
-                      'Immunity is passed on to those germs offspring. Also, and this is very ' +
-                      'important, each use of an antibiotic will increase the chance of immunity ' +
-                      'in subsequent levels. Use sparingly!');
+                      '<p>The percentage next to the antibiotic is the germ\'s natural chance of immunity.</p>' +
+                      '<p>Each use of an antibiotic will increase the chance of immunity ' +
+                      'in subsequent levels. Use sparingly!</p>');
           return true;
         }
       }
@@ -446,18 +451,17 @@ var Game = function ($, Box2D, canvasSelector) {
 
 jQuery(document).ready(function() {
   var pos = $('#canvas').position(),
-      h = $(window).height() - pos.top,
+      h = $(window).height(),
       w = $(window).width(),
       min = Math.min(w,h),
-      leftMargin = Math.max(0, Math.round((w - min)/2)),
+      leftMargin = Math.round((w - min)/2),
       percent = 0.8;
 
-
-
-  $('#canvas').attr('width', min).attr('height', min).css('left', leftMargin)
-              .css('top', pos.top*1.8);
+  $('#canvas').attr('width', min).attr('height', min)
+              .css('left', leftMargin)
+              .css('top', pos.top*2);
   $('#message').css('left', leftMargin + ((1 - percent)/2)*min)
-               .css('top', pos.top*1.8 + 0.2*min)
+               .css('top', pos.top*2 + 0.2*min)
                .css('width', min*percent);
 
   game = Game(jQuery, Box2D, '#canvas');

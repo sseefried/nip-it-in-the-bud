@@ -1,0 +1,263 @@
+<body>
+
+</body>
+
+
+<script>
+var con = console;
+
+var canvas = document.createElement('canvas');
+canvas.width = canvas.height = 1600;
+document.body.appendChild(canvas);
+var context = canvas.getContext('2d');
+var pi2 = Math.PI*2;
+
+// math
+function num(min,max) { return min + Math.random() * (max-min); }
+function int(min,max) { return Math.round(num(min,max)); }
+
+
+
+// colour
+
+function colour(seed) {
+  function rgba(base) {
+    var num = 0
+    if (base != undefined) {
+      base = ~~base; // convert to number
+      num = int(base - 10,base + 10);
+    } else {
+      num = int(0,255);
+    }
+    return num > 255 ? 255 : num < 0 ? 0 : num;
+  }
+
+  var col = "";
+
+  if (seed) {
+    var arr = seed.replace(/rgba\(/, "").replace(/\)/, "").split(",") // TODO dodgy regex
+    col = "rgba(" + rgba(arr[0]) + "," + rgba(arr[1]) + "," + rgba(arr[2]) + ",1)";
+  } else {
+    col = "rgba(" + rgba() + "," + rgba() + "," + rgba() + ",1)";
+  }
+  con.log(col, arr );
+  return col;
+}
+
+function radialGradient(ctx, x, y, size, seed) {
+
+  var grd = ctx.createRadialGradient(x, y, 0, x, y, size);
+
+  if (seed) {
+    if (seed.inner && seed.outer) {
+      grd.addColorStop(0, colour(seed.inner));
+      grd.addColorStop(1, colour(seed.outer));
+    } else {
+      con.warn("Missing seed paramater:", seed.inner, seed.outer)
+    }
+  } else {
+    grd.addColorStop(0, colour());
+    grd.addColorStop(1, colour());
+  }
+
+  return grd;
+}
+
+
+
+
+
+
+// geometry
+
+function circle(ctx, x, y, size, fill) {
+  ctx.fillStyle = fill;
+  ctx.beginPath();
+  ctx.arc(x, y, size, 0, pi2, false);
+  ctx.fill();
+}
+
+function wobble(ctx, x, y, size, fill) {
+  
+  function xp(i) { return size + Math.sin(i / bumps * pi2) * size; }
+  function yp(i) { return size + Math.cos(i / bumps * pi2) * size; }
+  
+  var bumps = int(5,16) * 2;
+
+  //circle(ctx, x, y, size, "#000" );
+  
+  var radInner = size * Math.sin(1 / bumps * pi2 / 2);
+  var radBackground = size * Math.cos(1 / bumps * pi2 / 2);
+  var scale = size / (xp(0) + radInner);
+    
+  ctx.save();
+  ctx.translate(size, size);
+  ctx.scale(scale, scale);
+  ctx.translate(-size, -size);
+
+  circle(ctx, x, y, radBackground, fill);
+  function dots(fill, start) {
+    for (var i = start; i < bumps; i += 2 ) {
+      circle(ctx, xp(i), yp(i), radInner, fill)
+    }
+  }
+  dots(fill,0);
+  dots("rgba(255,255,255,1)",1);
+  
+  ctx.restore();
+}
+
+function blob(ctx, points, fill, stroke, lineWidth) {
+
+  function getPoint(index) {
+    return points[index % points.length];
+  }
+
+  ctx.strokeStyle = stroke;
+  ctx.fillStyle = fill;
+  ctx.lineWidth = lineWidth;
+  ctx.beginPath();
+  
+  for(var i = 0; i < points.length; i++) {
+    
+    var p1 = getPoint(i);
+    var p2 = getPoint(i + 1);
+    var p3 = getPoint(i + 2);
+    
+    var px = (p1.x + p2.x) * 0.5;
+    var py = (p1.y + p2.y) * 0.5;
+
+    var nx = (p2.x + p3.x) * 0.5;
+    var ny = (p2.y + p3.y) * 0.5;
+    
+    if (i == 0) {
+      ctx.moveTo(px, py);
+    }
+    ctx.quadraticCurveTo(p2.x, p2.y, nx, ny);
+
+  }
+  ctx.closePath(); 
+  ctx.stroke(); 
+  ctx.fill(); 
+}
+
+
+
+
+
+
+
+function generate( seed ) {
+
+  var size = 200;//num(100,200);
+  var c = document.createElement('canvas');
+  c.width = c.height = 220;
+  var d = c.getContext('2d');
+  
+  var type = Math.random();
+  
+  var bg = radialGradient(d, size/2, size/2, size, seed.wall.colour );
+  
+  switch (seed.wall.type) {
+    case 0 :
+      circle(d, size/2, size/2, size/2, bg);
+      break
+    case 1 :
+      wobble(d, size/2, size/2, size/2, bg);
+      break
+    default :
+      con.warn("Unknown seed.wall.type: ", seed.wall.type)
+  }
+  
+
+
+
+  // draw blob
+
+  var blobPoints = 10;
+  var points = [];
+  for ( var i = 0; i < blobPoints; i++ ) {
+    var angle = i / blobPoints * pi2;
+    var radius = num(size / 2 * 0.2, size / 2 * 0.6);
+
+    function xpb(angle) { return size/2 + Math.sin(angle) * radius; }
+    function ypb(angle) { return size/2 + Math.cos(angle) * radius; }
+
+    points[i] = {x:xpb(angle), y:ypb(angle)};
+  }
+
+  var blobCol = radialGradient(d, 0, 0, 200); // pass in colours/weights as options object
+  var lineCol = colour();
+  var lineWidth = num(3,10);
+  blob(d, points, blobCol, lineCol, lineWidth); // use points average for centre?
+
+
+
+
+
+
+  // draw dots
+
+  var nucleusCol = "rgba(0,0,0,1)";
+  nucleusCol = radialGradient(d, 5, 5, size);
+  var nuclei = int(0,10);
+
+  function xp(angle) { return size / 2 + Math.sin(angle) * radius; }
+  function yp(angle) { return size / 2 + Math.cos(angle) * radius; }
+  
+  for (var i = 0; i < nuclei; i++) {
+    var angle = i / nuclei * pi2;
+    var radius = num(size * 0.1, size * 0.3);
+    var rr = num(2, 5);
+    angle = Math.random() * pi2;
+    circle(d, xp(angle), yp(angle), rr, nucleusCol);
+  }
+  
+  
+  return c;
+}
+
+
+
+var germs = [];
+for ( var i = 0; i < 4; i++ ) {
+  germs[i] = {
+    wall: {
+      type: int(0,1),
+      microvillus: int(5,16) * 2,
+      colour: {
+        inner: colour(),
+        outer: colour()
+      } 
+    },
+    nucleus: {},
+    membrane: {}
+  }
+
+  con.log(germs[i].wall.type)
+}
+
+for ( var i = 0; i < 30; i++ ) {
+  var germ = generate( germs[i % 4] );
+
+  var xp = (i % 4) * 220;
+  var yp = Math.floor(i / 4) * 220;
+
+  context.drawImage(germ, xp, yp);
+
+
+  // context.strokeStyle = "rgba(0,0,0,0.4)";
+  // context.lineWidth = 1;
+  // context.moveTo(xp,0);
+  // context.lineTo(xp,1000);
+  // context.moveTo(0,yp);
+  // context.lineTo(2000,yp);
+  // context.stroke();
+
+}
+
+
+
+
+</script>
+

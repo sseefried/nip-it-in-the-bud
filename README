@@ -1,1 +1,9 @@
-* Fix the width on mobile devices
+Ideas to improve the game:
+
+* Show how many more germs need to be killed to get the next antibiotic.
+* Have a charge bar for the antibiotics. You can't use it until you get a certain number of
+  germs.
+* Drag the antibiotics down to the jar and have it work only on an area.
+* Show antibiotic resistance visually.
+  - each antibiotic could be a colour and a germ could get "splashed" with a
+    colour when it becomes immune. Question: what about progeny?

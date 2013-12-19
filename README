@@ -7,3 +7,34 @@ Ideas to improve the game:
 * Show antibiotic resistance visually.
   - each antibiotic could be a colour and a germ could get "splashed" with a
     colour when it becomes immune. Question: what about progeny?
+
+
+------------------
+
+Feedback from Dev Debug
+~~~~~~~~~~~~~~~~~~~~~~~
+
+* Change the spaw points not to be a line.
+* Perhaps you don't have to kill all of them.
+* More than one click to kill some germs.
+* Have a nice effect for the antibiotics.
+* Perhaps they don't have to be germs.
+* Insects and crops?
+* Different properties for the germs.
+* If they were insects you could use flocking behaviours.
+* To enhance futility add permanence between levels. e.g. parts become infected and
+  stay that way.
+* Swipe action for penicillin.
+* Put a cool down on the touching, but be careful. It could be very annoying.
+* Gravity not necessarily needed. Have them flock in patterns.
+* pinch gestures to kill.
+* Petrie dish instead of a beaker.
+* Ideas for how you know whether you're going to die or not:
+    - Heart monitor
+
+* What if they could escape.
+
+* Greater game where you stop infection in entire hospital
+* Zoom in/zoom out.
+
+* Might not be able to see the whole object at once. Make it 3D and have to rotate it.

@@ -16,7 +16,7 @@ var Util = (function() {
   };
 
   return({ resistanceString: resistanceString,
-            propertiesOf: propertiesOf});
+           propertiesOf:     propertiesOf});
 
 })();
 
@@ -30,7 +30,7 @@ var jQueryExtend = function(jQuery) {
     $(this).click(handler);
     $(this).on("touchstart", function(event) {
       var e = event.originalEvent, ts;
-      // preventDefault prevents touch things as "double tap to zoom"
+      // preventDefault prevents things as "double tap to zoom"
       // and "pinch and zoom" on mobile devices. You may not want this.
       e.preventDefault();
       ts = e.touches;
@@ -51,10 +51,15 @@ var jQueryExtend = function(jQuery) {
   };
 };
 
+//
+// 'width' is width in metres of world.
+//
 var GameView = function($, Box2D, canvasSelector) {
-  var canvas = $(canvasSelector)[0];
-  var b2;
-
+  var canvas = $(canvasSelector)[0],
+      b2,
+      widthInPixels  = $(canvas).width(),
+      heightInPixels = $(canvas).height(),
+      width, height, scale;
   //
   // Draws a beaker centred at (x,y) of size (width,height) in the virtual co-ordinates.
   //
@@ -96,18 +101,56 @@ var GameView = function($, Box2D, canvasSelector) {
     b2 = Box2DWorld(Box2D);
   };
 
+  var clearAntibioticLinks = function() {
+    $('#antibiotics').empty();
+  };
+
+  var setupDebugDraw = function() {
+    var debugDraw = new b2.DebugDraw();
+    context = canvas.getContext('2d');
+
+    // Use this canvas context for drawing the debugging screen
+    debugDraw.SetSprite(context);
+    debugDraw.SetDrawScale(scale);
+    // Fill boxes with alpha transparency of 0.3
+    debugDraw.SetFillAlpha(0.3);
+    debugDraw.SetLineThickness(1.0);
+
+    // Display all shapes and joints
+    debugDraw.SetFlags(b2.DebugDraw.e_shapeBit | b2.DebugDraw.e_jointBit);
+    b2.world.SetDebugDraw(debugDraw);
+  };
+
+  var collideAtPos = function(body, pos) {
+    var fixture, vec = new b2.Vec2(pos.x, pos.y);
+    for (fixture = body.GetFixtureList(); fixture; fixture = fixture.GetNext()) {
+      if (fixture.TestPoint(vec)) {
+        return true;
+      }
+    }
+    return false;
+  }
+
+  // 'width' is in metres
+  var init = function(w) {
+    width  = w;
+    height = heightInPixels/widthInPixels * width;
+    scale  = widthInPixels/width;
+  };
 
   // Initialisation
   b2 = Box2DWorld(Box2D);
   // return methods
-  return ({ b2:                 b2,
-            createBeaker:       createBeaker,
-            showAntibioticLink: showAntibioticLink,
-            resetWorld:         resetWorld
+  return ({ b2:                   b2, // FIXME eventualy don't expose this.
+            init:                 init,
+            createBeaker:         createBeaker,
+            clearAntibioticLinks: clearAntibioticLinks,
+            showAntibioticLink:   showAntibioticLink,
+            setupDebugDraw:       setupDebugDraw,
+            resetWorld:           resetWorld,
+            collideAtPos:         collideAtPos
           });
-
 };
-
 
 var Game = function ($, canvasSelector, view) {
   jQueryExtend($); //
@@ -116,9 +159,9 @@ var Game = function ($, canvasSelector, view) {
 
   // sseefried: I don't want to use magic numbers in my code, so I'm defining the
   //   width and height for now. FIXME: get this directly from the canvas.
-  var canvas = $(canvasSelector)[0];
-  var widthInPixels  = $(canvas).width();
-  var heightInPixels = $(canvas).height();
+  var canvas = $(canvasSelector)[0]; // FIXME: remove
+  var widthInPixels  = $(canvas).width(); // FIXME: remove
+  var heightInPixels = $(canvas).height(); // FIXME: remove
 
   var width = 40;
   var height = heightInPixels/widthInPixels * width;
@@ -139,60 +182,28 @@ var Game = function ($, canvasSelector, view) {
 
   var Condition = { continuing: 0, failed: 1, success: 2};
 
-
   var initGameState = function() {
     var i, props = Util.propertiesOf(Antibiotics);
     gameState = { score: 0, resistances: {}};
 
+    view.clearAntibioticLinks();
+
     for (i in props) {
       gameState.resistances[props[i]] = 0.10; // initial resistance chance of 0.10
-    }
-
-    $('#antibiotics').empty();
-    for (i in props) {
       view.showAntibioticLink(props[i], gameState.resistances);
     }
   };
 
   initGameState();
 
-  var setupDebugDraw = function() {
-    var debugDraw = new view.b2.DebugDraw();
-    context = canvas.getContext('2d');
-
-    // rshankar: Use this canvas context for drawing the debugging screen
-    debugDraw.SetSprite(context);
-    debugDraw.SetDrawScale(scale);
-    // rshankar: Fill boxes with alpha transparency of 0.3
-    debugDraw.SetFillAlpha(0.3);
-    debugDraw.SetLineThickness(1.0);
-
-    // rshankar: Display all shapes and joints
-    debugDraw.SetFlags(view.b2.DebugDraw.e_shapeBit | view.b2.DebugDraw.e_jointBit);
-    view.b2.world.SetDebugDraw(debugDraw);
-  };
-
-
   var randomMultiplyTime = function() {
     // +1 is because it cannot be zero
     return Math.round(Math.random() * 2 * doublingPeriod * stepsInSecond) + 1;
   };
 
-  var collideWithMouse = function(body, mousePos) {
-    var fixture, vec = new view.b2.Vec2(mousePos.x, mousePos.y);
-    for (fixture = body.GetFixtureList(); fixture; fixture = fixture.GetNext()) {
-      if (fixture.TestPoint(vec)) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-
   var growthRateForSteps = function(t) {
     return Math.pow(2,1/t);
   }
-
 
   var showMessage = function(message) {
     var animateId;
@@ -203,9 +214,6 @@ var Game = function ($, canvasSelector, view) {
     if (gameState.handler) {
       $(document).unbindClickAndTouchstart(gameState.handler);
     }
-
-
-
 
     $('#message').html(message + '<p><a href="#" id="continue">Click here</a> to continue</p>');
     $('#message').show();
@@ -232,7 +240,6 @@ var Game = function ($, canvasSelector, view) {
 
   var start = function(startingGerms) {
     var context   = canvas.getContext("2d"), i;
-
 
     var clickToStartNewGame = function() {
       var handler =function() {
@@ -294,13 +301,13 @@ var Game = function ($, canvasSelector, view) {
       $('#' + antibiotic + '-resistance').html(resistanceString(newResist));
     }
 
-    var killGermAtPos = function(mousePos) {
+    var killGermAtPos = function(pos) {
       var body, numGerms = 0;
           // TODO: I really should be checking a bounding box, but instead
           // I just check every object in the world.
       for (body = view.b2.world.GetBodyList(); body; body = body.GetNext()) {
         if (body.GetUserData()) {
-          if (collideWithMouse(body, mousePos)) {
+          if (view.collideAtPos(body, pos)) {
             view.b2.world.DestroyBody(body);
             gameState.score += 1;
           } else {
@@ -318,9 +325,9 @@ var Game = function ($, canvasSelector, view) {
     var posHandler = function(selector) {
       return function(e) {
         var offset = $(selector).offset();
-        var mousePos = { x : (e.pageX - offset.left)/scale,
+        var pos = { x : (e.pageX - offset.left)/scale,
                          y : (e.pageY - offset.top)/scale };
-        killGermAtPos(mousePos);
+        killGermAtPos(pos);
       };
     };
 
@@ -434,6 +441,7 @@ var Game = function ($, canvasSelector, view) {
     };
 
     ///////////////////////////////////////////////////////////////
+    view.init(width);
     startingGerms = startingGerms || 1;
 
     gameState.step = 0;
@@ -450,7 +458,7 @@ var Game = function ($, canvasSelector, view) {
     bindGameHandler(posHandler(canvasSelector));
 //    bindAntibioticHandlers();
 
-    setupDebugDraw();
+    view.setupDebugDraw();
     animate();
 
   };
@@ -490,7 +498,6 @@ jQuery(document).ready(function() {
                .css('width', min*percent);
 
   gameView = GameView($, Box2D, '#canvas');
-
   game = Game(jQuery, '#canvas', gameView);
 //  $('#debug').html("height = " + window.innerHeight);
 

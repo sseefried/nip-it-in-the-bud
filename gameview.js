@@ -1,5 +1,14 @@
 //
-// 'width' is width in metres of world.
+// The GameView object is concerned with visual representation and binding/unbinding event handers.
+// (The game logic is in the Game object.)
+// - 'width' is width in metres of world.
+//
+// The "Germ API"
+// --------------
+//
+// The Game object doesn't need to be (and shouldn't be) aware of the internal representation
+// of a germ object inside the GameView. Each germ object must conform to the Germ API
+// detailed below (see function 'createGerm' for more details.)
 //
 var GameView = function($, Box2D, canvasSelector, jQueryExtend) {
   jQueryExtend($);
@@ -28,6 +37,14 @@ var GameView = function($, Box2D, canvasSelector, jQueryExtend) {
 
   };
 
+
+  //
+  // Clears all the antibiotic links
+  //
+  var clearAntibioticLinks = function() {
+    $('#antibiotics').empty();
+  };
+
   //
   // Adds (initially hidden) antibiotic link
   //
@@ -39,6 +56,11 @@ var GameView = function($, Box2D, canvasSelector, jQueryExtend) {
     bindAntibioticHandler(ab, abHandler);
   };
 
+  //
+  // Shows a previously hidden antibiotic link
+  //
+  // Precondition: addAntibioticLink must have been called before for given 'ab'
+  //
   var showAntibioticLink = function(ab) {
     $('#antibiotics #' + ab).show();
   };
@@ -54,9 +76,6 @@ var GameView = function($, Box2D, canvasSelector, jQueryExtend) {
     b2 = Box2DWorld(Box2D);
   };
 
-  var clearAntibioticLinks = function() {
-    $('#antibiotics').empty();
-  };
 
   var setupDebugDraw = function() {
     var debugDraw = new b2.DebugDraw();
@@ -71,23 +90,6 @@ var GameView = function($, Box2D, canvasSelector, jQueryExtend) {
     // Display all shapes and joints
     debugDraw.SetFlags(b2.DebugDraw.e_shapeBit | b2.DebugDraw.e_jointBit);
     b2.world.SetDebugDraw(debugDraw);
-  };
-
-  //
-  // In Box2D germs are Box2D "body"s.
-  //
-  var collideAtPos = function(germ, pos) {
-    var fixture, vec = new b2.Vec2(pos.x, pos.y);
-    for (fixture = germ.GetFixtureList(); fixture; fixture = fixture.GetNext()) {
-      if (fixture.TestPoint(vec)) {
-        return true;
-      }
-    }
-    return false;
-  };
-
-  var destroyGerm = function(germ) {
-    b2.world.DestroyBody(germ);
   };
 
   // FIXME: Just for debug
@@ -174,38 +176,77 @@ var GameView = function($, Box2D, canvasSelector, jQueryExtend) {
     $('#score').html("Score: " + score);
   };
 
-  var getGermData = function(germ) {
-    return germ.GetUserData();
-  };
+
+
 
   //
   // o is object containing fields 'x', 'y', 'r' for
   // (x,y) position and radius r.
   //
-  // 'germData' is arbitrary user data associated with the
+  // 'data' is arbitrary user data associated with the
   // germ.
-  var createGerm = function(o, germData) {
+  //
+  // The returned object conforms to the Germ API.
+  //
+  var createGerm = function(o, data) {
     var body = b2.createDynamicBody({x: o.x, y: o.y, angularDamping: 0.7},
                                 [{ density: 1.0,
                                    friction: 1.0,
                                    restitution: 0.0,
                                    shape: new b2.CircleShape(o.r) }]);
-    body.SetUserData(germData);
-    return body;
-  };
+    body.SetUserData(data);
 
-  var getGermPos = function(germ) {
-    return germ.GetPosition();
-  };
+    var getData = function() {
+      return body.GetUserData();
+    };
 
-  var getGermRadius = function(germ) {
-    var shape = germ.GetFixtureList().GetShape();
-    return shape.GetRadius();
-  };
+    var getPos = function() {
+      return body.GetPosition();
+    };
 
-  var setGermRadius = function(germ, r) {
-    var shape = germ.GetFixtureList().GetShape();
-    shape.SetRadius(r);
+    var getRadius = function() {
+      var shape = body.GetFixtureList().GetShape();
+      return shape.GetRadius();
+    };
+
+    var setRadius = function(r) {
+      var shape = body.GetFixtureList().GetShape();
+      shape.SetRadius(r);
+    };
+
+    //
+    // Destroy must be called on the germ to deallocate
+    // all its sub-components and remove it from the Box2D world.
+    //
+    var destroy = function() {
+      b2.world.DestroyBody(body);
+    };
+
+    //
+    // In Box2D germs are Box2D "body"s.
+    //
+    var isAtPos = function(pos) {
+      var fixture, vec = new b2.Vec2(pos.x, pos.y);
+      for (fixture = body.GetFixtureList(); fixture; fixture = fixture.GetNext()) {
+        if (fixture.TestPoint(vec)) {
+          return true;
+        }
+      }
+      return false;
+    };
+
+
+    //
+    // The fields below are the definition of the Germ API.
+    //
+    return({ isAtPos:                    isAtPos,
+             getData:                    getData,
+             getPos:                     getPos,
+             getRadius:                  getRadius,
+             setRadius:                  setRadius,
+             destroy:                    destroy
+           });
+
   };
 
   var stepPhysics = function(timeStep) {
@@ -256,8 +297,6 @@ var GameView = function($, Box2D, canvasSelector, jQueryExtend) {
             setupDebugDraw:             setupDebugDraw,
             resetWorld:                 resetWorld,
 
-            // FIXME: I'd like to rename 'collideAtPos'
-            collideAtPos:               collideAtPos,
             showMessage:                showMessage,
             clearMessage:               clearMessage,
             bindHandler:                bindHandler,
@@ -273,20 +312,7 @@ var GameView = function($, Box2D, canvasSelector, jQueryExtend) {
             updateLevel:                updateLevel,
             floatingMessage:            floatingMessage,
 
-            // germ functions
-            //
-            // FIXME: I'd actually like to have a germ API. Whenever you create a germ an
-            // object is returned that has all these methods defined on it. Much more
-            // object-oriented that way.
-            // view.getGermData(germ) just looks so much more convoluted rather than
-            // germ.getGermData()
-            //
-            destroyGerm:                destroyGerm,
             createGerm:                 createGerm,
-            getGermData:                getGermData,
-            getGermPos:                 getGermPos,
-            getGermRadius:              getGermRadius,
-            setGermRadius:              setGermRadius,
 
             stepPhysics:                stepPhysics,
             drawDebugData:              drawDebugData,

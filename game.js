@@ -17,9 +17,9 @@ var Game = function (view) {
 
       for (i in gameState.germs) {
         germ     = gameState.germs[i];
-        germData = view.getGermData(germ);
+        germData = germ.getData();
         if (!germData.resistances[antibiotic]) {
-          view.destroyGerm(germ);
+          germ.destroy();
           toDelete.push(parseInt(i));
           gameState.score += 1;
         }
@@ -129,9 +129,9 @@ var Game = function (view) {
           // I just check every object in the world.
       for (i in gameState.germs) {
         germ = gameState.germs[i];
-        if (view.collideAtPos(germ, pos)) {
+        if (germ.isAtPos(pos)) {
           toDelete.push(parseInt(i));
-          view.destroyGerm(germ);
+          germ.destroy();
           gameState.score += 1;
         } else {
           numGerms += 1; // still alive
@@ -151,16 +151,16 @@ var Game = function (view) {
 
       for (i in gameState.germs) {
         germ     = gameState.germs[i];
-        germData = view.getGermData(germ);
+        germData = germ.getData();
         count += 1;
-        if (view.getGermPos(germ).y < height/6) {
+        if (germ.getPos().y < height/6) {
           gameState.condition = Condition.failed;
         }
 
         if (gameState.step === germData.multiplyAt) {
-          pos = view.getGermPos(germ);
-          r   = view.getGermRadius(germ)/2;
-          view.setGermRadius(germ, r);
+          pos = germ.getPos();
+          r   = germ.getRadius()/2;
+          germ.setRadius(r);
           t = randomMultiplyTime();
           germData.multiplyAt = gameState.step + t;
           germData.growthRate = growthRateForSteps(t);
@@ -171,37 +171,37 @@ var Game = function (view) {
     };
 
     var failedMessage = function() {
-      view.floatingMessage({ pos: { x: width/2, y: height/5 },
-                             color: "red",
+      view.floatingMessage({ pos:       { x: width/2, y: height/5 },
+                             color:     "red",
                              modifiers: "bold",
-                             font: "Helvetica",
-                             size: 10,
-                             message: "INFECTED!" });
+                             font:      "Helvetica",
+                             size:       10,
+                             message:    "INFECTED!" });
     };
 
     var successMessage = function() {
-      view.floatingMessage({ pos: { x: width/2, y: height/5 },
-                             color: "green",
+      view.floatingMessage({ pos:       { x: width/2, y: height/5 },
+                             color:     "green",
                              modifiers: "bold",
-                             font: "Helvetica",
-                             size: 7,
-                             message: "Epidemic averted!"
+                             font:      "Helvetica",
+                             size:      7,
+                             message:   "Epidemic averted!"
                              });
 
-      view.floatingMessage({ pos: { x: width/2, y: height*2/5 },
-                             color: "#333333",
+      view.floatingMessage({ pos:       { x: width/2, y: height*2/5 },
+                             color:     "#333333",
                              modifiers: "bold",
-                             font: "Helvetica",
-                             size: 4,
-                             message: "Tap to continue" });
+                             font:      "Helvetica",
+                             size:      4,
+                             message:   "Tap to continue" });
     };
 
     var growGerms = function() {
       var i, germ, germData;
       for (i in gameState.germs) {
         germ = gameState.germs[i];
-        germData = view.getGermData(germ);
-        view.setGermRadius(germ, view.getGermRadius(germ)*germData.growthRate);
+        germData = germ.getData();
+        germ.setRadius(germ.getRadius()*germData.growthRate);
       }
     };
 

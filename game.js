@@ -1,5 +1,4 @@
 var Game = function (view) {
-  jQueryExtend($); //
   var Antibiotics = { Penicillin: 2, Ciprofloxacin: 5 };
 //  var Antibiotics = { Penicillin: 50, Ciprofloxacin: 200 };
   var width = 40;
@@ -8,7 +7,7 @@ var Game = function (view) {
   var germSize = 1;
   var stepsInSecond = 30;
   var timeStep = 1/stepsInSecond;
-  var doublingPeriod = 3; // in seconds
+  var doublingPeriod = 3; // in seconds (on average)
   var resistanceIncrease = 1.1; // multiplier for resistance increase
   var Condition = { continuing: 0, failed: 1, success: 2};
 
@@ -271,7 +270,8 @@ var Game = function (view) {
     gameState.condition = Condition.continuing;
     gameState.startingGerms = startingGerms;
 
-    view.createBeaker({x: 20, y: height/2, width: 36, height: height*2/3, wallWidth: 1});
+    view.createBeaker({x: width/2, y: height/2, width: width*0.9, height: height*2/3,
+                       wallWidth: width/40});
     createGerms(startingGerms);
 
     view.updateLevel(startingGerms);
@@ -297,16 +297,17 @@ var Game = function (view) {
   }
 
   var initGameState = function() {
-    var i, props = Util.propertiesOf(Antibiotics);
+    var i, props = Util.propertiesOf(Antibiotics), ab;
     gameState = { score: 0, resistances: {}, activations: {},
                   germs: [], nextGermId: 0 };
 
     view.clearAntibioticLinks();
 
     for (i in props) {
-      gameState.resistances[props[i]] = 0.10; // initial resistance chance of 0.10
-      gameState.activations[props[i]] = false;
-      view.addAntibioticLink(props[i], killGermsWithAntibiotic(props[i]), gameState.resistances);
+      ab = props[i];
+      gameState.resistances[ab] = 0.10; // initial resistance chance of 0.10
+      gameState.activations[ab] = false;
+      view.addAntibioticLink(ab, killGermsWithAntibiotic(ab), gameState.resistances);
     }
   };
 
@@ -338,7 +339,7 @@ jQuery(document).ready(function() {
                .css('top', pos.top*2 + 0.2*min)
                .css('width', min*percent);
 
-  gameView = GameView($, Box2D, '#canvas');
+  gameView = GameView($, Box2D, '#canvas', jQueryExtend);
   game     = Game(gameView);
 //  $('#debug').html("height = " + window.innerHeight);
 

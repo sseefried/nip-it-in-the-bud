@@ -1,7 +1,8 @@
 //
 // 'width' is width in metres of world.
 //
-var GameView = function($, Box2D, canvasSelector) {
+var GameView = function($, Box2D, canvasSelector, jQueryExtend) {
+  jQueryExtend($);
   var canvas = $(canvasSelector)[0],
       context = canvas.getContext('2d'), // 2D canvas context
       b2, // FIXME: Remove eventually
@@ -242,14 +243,21 @@ var GameView = function($, Box2D, canvasSelector) {
             heightInPixels:             (function() { return heightInPixels; }),
             widthInPixels:              (function() { return widthInPixels; }),
             createBeaker:               createBeaker,
+
+
             clearAntibioticLinks:       clearAntibioticLinks,
+            // FIXME: The existence of both addAntibioticLink and showAntibioticLink
+            // feels somehow superfluous to me. Shouldn't the just come into existence once?
+            // not in this two-step process of being added (but hidden) and then shown later?
             addAntibioticLink:          addAntibioticLink,
             showAntibioticLink:         showAntibioticLink,
+
             updateAntibioticResistance: updateAntibioticResistance,
             setupDebugDraw:             setupDebugDraw,
             resetWorld:                 resetWorld,
+
+            // FIXME: I'd like to rename 'collideAtPos'
             collideAtPos:               collideAtPos,
-            destroyGerm:                destroyGerm,
             showMessage:                showMessage,
             clearMessage:               clearMessage,
             bindHandler:                bindHandler,
@@ -265,8 +273,15 @@ var GameView = function($, Box2D, canvasSelector) {
             updateLevel:                updateLevel,
             floatingMessage:            floatingMessage,
 
-
             // germ functions
+            //
+            // FIXME: I'd actually like to have a germ API. Whenever you create a germ an
+            // object is returned that has all these methods defined on it. Much more
+            // object-oriented that way.
+            // view.getGermData(germ) just looks so much more convoluted rather than
+            // germ.getGermData()
+            //
+            destroyGerm:                destroyGerm,
             createGerm:                 createGerm,
             getGermData:                getGermData,
             getGermPos:                 getGermPos,

@@ -7,7 +7,10 @@ var GameView = function($, Box2D, canvasSelector) {
       b2, // FIXME: Remove eventually
       widthInPixels  = $(canvas).width(),
       heightInPixels = $(canvas).height(),
-      width, height, scale;
+      width, height, scale,
+      velocityIterations = 8,
+      positionIterations = 100;
+
   //
   // Draws a beaker centred at (x,y) of size (width,height) in the virtual co-ordinates.
   //
@@ -24,12 +27,19 @@ var GameView = function($, Box2D, canvasSelector) {
 
   };
 
-  var showAntibioticLink = function(ab, abHandler, resistances) {
+  //
+  // Adds (initially hidden) antibiotic link
+  //
+  var addAntibioticLink = function(ab, abHandler, resistances) {
     $('#antibiotics').append('<span id="' +
                               ab + '" style="display:none;"><a href="#">' + ab +
                               '</a><span id="'+ ab + '-resistance">'+
                               Util.resistanceString(resistances[ab]) +'</span></span>');
     bindAntibioticHandler(ab, abHandler);
+  };
+
+  var showAntibioticLink = function(ab) {
+    $('#antibiotics #' + ab).show();
   };
 
   var bindAntibioticHandler = function(antibiotic, antibioticHandler) {
@@ -110,11 +120,6 @@ var GameView = function($, Box2D, canvasSelector) {
     b2     = Box2DWorld(Box2D);
   };
 
-
-  var bb = function() {
-    return b2;
-  };
-
   var setContinueAction = function(handler, newHandler) {
     $('#continue').unbindClickAndTouchstart(handler);
     $(document).clickOrTouchstart(newHandler);
@@ -138,9 +143,13 @@ var GameView = function($, Box2D, canvasSelector) {
     $(document).unbindClickAndTouchstart(handler);
   };
 
+  var unbindAllHandlers = function() {
+    $(document).unbindClickAndTouchstart();
+  };
+
   //
   // 'handler' is a function which expects
-  // and object with field 'x' and 'y' in
+  // an object with field 'x' and 'y' in
   // the virtual co-ordinates.
   //
   var bindPosHandler = function(handler) {
@@ -152,30 +161,120 @@ var GameView = function($, Box2D, canvasSelector) {
     });
   };
 
+  var bindResetHandler = function(handler) {
+    $('#reset').clickOrTouchstart(handler);
+  };
+
+  var updateAntibioticResistance = function(antibiotic, str) {
+    $('#' + antibiotic + '-resistance').html(str);
+  };
+
+  var updateScore = function(score) {
+    $('#score').html("Score: " + score);
+  };
+
   var getGermData = function(germ) {
     return germ.GetUserData();
-  }
+  };
+
+  //
+  // o is object containing fields 'x', 'y', 'r' for
+  // (x,y) position and radius r.
+  //
+  // 'germData' is arbitrary user data associated with the
+  // germ.
+  var createGerm = function(o, germData) {
+    var body = b2.createDynamicBody({x: o.x, y: o.y, angularDamping: 0.7},
+                                [{ density: 1.0,
+                                   friction: 1.0,
+                                   restitution: 0.0,
+                                   shape: new b2.CircleShape(o.r) }]);
+    body.SetUserData(germData);
+    return body;
+  };
+
+  var getGermPos = function(germ) {
+    return germ.GetPosition();
+  };
+
+  var getGermRadius = function(germ) {
+    var shape = germ.GetFixtureList().GetShape();
+    return shape.GetRadius();
+  };
+
+  var setGermRadius = function(germ, r) {
+    var shape = germ.GetFixtureList().GetShape();
+    shape.SetRadius(r);
+  };
+
+  var stepPhysics = function(timeStep) {
+    b2.world.Step(timeStep, velocityIterations, positionIterations);
+    b2.world.ClearForces();
+  };
+
+  var drawDebugData = function() {
+    b2.world.DrawDebugData();
+  };
+
+  var updateLevel = function(level) {
+    $('#level').html("Level: " + level);
+  };
+
+  //
+  // 'o' is an object with fields
+  //  - pos
+  //  - color
+  //  - modifiers
+  //  - font
+  //  - size (1 to 100)
+  //  - message
+  //
+  var floatingMessage = function(o) {
+    context.fillStyle = o.color;
+    context.font = (o.modifiers || "") + " " + Math.round(o.size*heightInPixels/100) + "px " + o.font;
+
+    context.textAlign = "center";
+    context.fillText(o.message, o.pos.x*widthInPixels/width, o.pos.y*heightInPixels/height);
+  };
 
   // return methods
-  return ({ bb:                     bb,
-            init:                   init,
-            createBeaker:           createBeaker,
-            clearAntibioticLinks:   clearAntibioticLinks,
-            showAntibioticLink:     showAntibioticLink,
-            setupDebugDraw:         setupDebugDraw,
-            resetWorld:             resetWorld,
-            collideAtPos:           collideAtPos,
-            destroyGerm:            destroyGerm,
-            showMessage:            showMessage,
-            clearMessage:           clearMessage,
-            bindHandler:            bindHandler,
-            unbindHandler:          unbindHandler,
-            bindPosHandler:         bindPosHandler,
-            setContinueAction:      setContinueAction,
-            installContinueHandler: installContinueHandler,
-            unschedule:             unschedule,
-            schedule:               schedule,
-            getGermData:            getGermData,
-            numBodies:              numBodies //FIXME: Remove
+  return ({ init:                       init,
+            heightInPixels:             (function() { return heightInPixels; }),
+            widthInPixels:              (function() { return widthInPixels; }),
+            createBeaker:               createBeaker,
+            clearAntibioticLinks:       clearAntibioticLinks,
+            addAntibioticLink:          addAntibioticLink,
+            showAntibioticLink:         showAntibioticLink,
+            updateAntibioticResistance: updateAntibioticResistance,
+            setupDebugDraw:             setupDebugDraw,
+            resetWorld:                 resetWorld,
+            collideAtPos:               collideAtPos,
+            destroyGerm:                destroyGerm,
+            showMessage:                showMessage,
+            clearMessage:               clearMessage,
+            bindHandler:                bindHandler,
+            unbindHandler:              unbindHandler,
+            unbindAllHandlers:          unbindAllHandlers,
+            bindPosHandler:             bindPosHandler,
+            bindResetHandler:           bindResetHandler,
+            setContinueAction:          setContinueAction,
+            installContinueHandler:     installContinueHandler,
+            unschedule:                 unschedule,
+            schedule:                   schedule,
+            updateScore:                updateScore,
+            updateLevel:                updateLevel,
+            floatingMessage:            floatingMessage,
+
+
+            // germ functions
+            createGerm:                 createGerm,
+            getGermData:                getGermData,
+            getGermPos:                 getGermPos,
+            getGermRadius:              getGermRadius,
+            setGermRadius:              setGermRadius,
+
+            stepPhysics:                stepPhysics,
+            drawDebugData:              drawDebugData,
+            numBodies:                  numBodies //FIXME: Remove
           });
 };

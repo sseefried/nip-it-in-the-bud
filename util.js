@@ -4,10 +4,15 @@ var Util = (function() {
     return "(" + Math.round(r*100.0) + "%)";
   }
 
-  var deleteArrayElements = function(a, toDelete) {
+  //
+  // Returns a copy of the array in which the indices
+  // in "toRemove" have been removed.
+  // Does NOT update in place
+  //
+  var removeArrayElements = function(a, toRemove) {
     var i, a_ = [];
     for (i = 0; i < a.length; i++) {
-      if ( toDelete.indexOf(i) < 0 ) {
+      if ( toRemove.indexOf(i) < 0 ) {
         a_.push(a[i]);
       }
     }
@@ -25,7 +30,7 @@ var Util = (function() {
   };
 
   return({ resistanceString:     resistanceString,
-           deleteArrayElements:  deleteArrayElements,
+           removeArrayElements:  removeArrayElements,
            propertiesOf:         propertiesOf });
 
 })();

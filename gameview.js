@@ -152,6 +152,10 @@ var GameView = function($, Box2D, canvasSelector) {
     });
   };
 
+  var getGermData = function(germ) {
+    return germ.GetUserData();
+  }
+
   // return methods
   return ({ bb:                     bb,
             init:                   init,
@@ -171,6 +175,7 @@ var GameView = function($, Box2D, canvasSelector) {
             installContinueHandler: installContinueHandler,
             unschedule:             unschedule,
             schedule:               schedule,
+            getGermData:            getGermData,
             numBodies:              numBodies //FIXME: Remove
           });
 };

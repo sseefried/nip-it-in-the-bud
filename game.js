@@ -1,68 +1,3 @@
-var Util = (function() {
-
-  var resistanceString = function(r) {
-    return "(" + Math.round(r*100.0) + "%)";
-  }
-
-  var deleteArrayElements = function(a, toDelete) {
-    var i, a_ = [];
-    for (i = 0; i < a.length; i++) {
-      if ( toDelete.indexOf(i) < 0 ) {
-        a_.push(a[i]);
-      }
-    }
-    return a_;
-  };
-
-  var propertiesOf = function(o) {
-    var p, a = [];
-    for (p in o) {
-      if (o.hasOwnProperty(p)) {
-        a.push(p);
-      }
-    }
-    return a;
-  };
-
-  return({ resistanceString:     resistanceString,
-           deleteArrayElements:  deleteArrayElements,
-           propertiesOf:         propertiesOf });
-
-})();
-
-var jQueryExtend = function(jQuery) {
-  var $ = jQuery;
-  //
-  // A function that adds a mouse handler for
-  //
-  var proto = $(window).__proto__;
-  proto.clickOrTouchstart = function(handler) {
-    $(this).click(handler);
-    $(this).on("touchstart", function(event) {
-      var e = event.originalEvent, ts;
-      // preventDefault prevents things as "double tap to zoom"
-      // and "pinch and zoom" on mobile devices. You may not want this.
-      e.preventDefault();
-      ts = e.touches;
-      for (i=0; i < ts.length; i++) {
-        handler(ts[i]);
-      }
-    });
-  };
-
-  proto.unbindClickAndTouchstart = function(handler) {
-    if (handler) {
-      $(this).unbind("click", handler);
-      $(this).unbind("touchstart", handler);
-    } else {
-      $(this).unbind("click");
-      $(this).unbind("touchstart");
-    }
-  };
-};
-
-
-
 var Game = function ($, canvasSelector, view) {
   jQueryExtend($); //
   var Antibiotics = { Penicillin: 2, Ciprofloxacin: 5 };
@@ -79,7 +14,7 @@ var Game = function ($, canvasSelector, view) {
 
   var scale = widthInPixels/width; // world is 40m wide
 
-  var gameState; 
+  var gameState;
   var germSize = 1;
 
   var stepsInSecond = 30;
@@ -94,29 +29,23 @@ var Game = function ($, canvasSelector, view) {
 
   var Condition = { continuing: 0, failed: 1, success: 2};
 
-  var initGameState = function() {
-    var i, props = Util.propertiesOf(Antibiotics);
-    gameState = { score: 0, resistances: {}, germs: [], nextGermId: 0 };
-
-    view.clearAntibioticLinks();
-
-    for (i in props) {
-      gameState.resistances[props[i]] = 0.10; // initial resistance chance of 0.10
-      view.showAntibioticLink(props[i], killGermsWithAntibiotic(props[i]), gameState.resistances);
-    }
-  };
-
   var killGermsWithAntibiotic = function(antibiotic) {
+
     return (function() {
-      var body, germ, resist, newResist;
-      for (body = view.bb().world.GetBodyList(); body; body = body.GetNext()) {
-        if (germ = body.GetUserData()) {
-          if (!germ.resistances[antibiotic]) {
-            view.bb().world.DestroyBody(body);
-            gameState.score += 1;
-          }
+      var i, germ, germData, resist, newResist, toDelete = [];
+
+      for (i in gameState.germs) {
+        germ     = gameState.germs[i];
+        germData = view.getGermData(germ);
+        if (!germData.resistances[antibiotic]) {
+          view.destroyGerm(germ);
+          toDelete.push(parseInt(i));
+          gameState.score += 1;
         }
       }
+
+      Util.deleteArrayElements(gameState.germs, toDelete);
+
       // increase the chance that germs are resistant
       resist = gameState.resistances[antibiotic];
       newResist = Math.min(0.99, resist*resistanceIncrease);
@@ -296,7 +225,6 @@ var Game = function ($, canvasSelector, view) {
       multiplyGerms();
       $('#score').html("Score: " + gameState.score);
 
-
       if (!checkAndEnableAntibiotics()) {
 
         switch (gameState.condition) {
@@ -344,7 +272,6 @@ var Game = function ($, canvasSelector, view) {
     };
 
     ///////////////////////////////////////////////////////////////
-    initGameState();
     view.init(width);
     startingGerms = startingGerms || 1;
 
@@ -377,6 +304,20 @@ var Game = function ($, canvasSelector, view) {
     }
     view.resetWorld();
   }
+
+  var initGameState = function() {
+    var i, props = Util.propertiesOf(Antibiotics);
+    gameState = { score: 0, resistances: {}, germs: [], nextGermId: 0 };
+
+    view.clearAntibioticLinks();
+
+    for (i in props) {
+      gameState.resistances[props[i]] = 0.10; // initial resistance chance of 0.10
+      view.showAntibioticLink(props[i], killGermsWithAntibiotic(props[i]), gameState.resistances);
+    }
+  };
+
+  initGameState(); // called once when the game object is first created
 
   return ({
     pauseAndShowMessage:  pauseAndShowMessage,

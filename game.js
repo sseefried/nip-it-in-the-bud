@@ -1,5 +1,5 @@
 var Game = function (view) {
-  var Antibiotics = { Penicillin: 2, Ciprofloxacin: 5 };
+  var Antibiotics = { Penicillin: 10, Ciprofloxacin: 20 };
 //  var Antibiotics = { Penicillin: 50, Ciprofloxacin: 200 };
   var width = 40;
   var height = width/view.widthInPixels()*view.heightInPixels();
@@ -65,7 +65,7 @@ var Game = function (view) {
     var handler = function(e) {
       view.clearMessage();
       if (gameState.animator) {
-        view.schedule(gameState.animator, timeStep*1000);
+        view.reschedule(gameState.animator);
       }
       view.setContinueAction(handler, gameState.handler);
     };
@@ -79,190 +79,186 @@ var Game = function (view) {
   };
 
 
-  var start = function(startingGerms) {
-    var context   = canvas.getContext("2d"), i;
-
-    var clickToStartNewGame = function() {
-      var handler =function() {
-        destroy();
-        start(gameState.startingGerms + 1);
-      };
-      view.bindHandler(handler);
+  var clickToStartNewGame = function() {
+    var handler =function() {
+      destroy();
+      start(gameState.startingGerms + 1);
     };
+    view.bindHandler(handler);
+  };
 
-    //
-    // Randomly generates antiobiotics resistance for bacteria
-    //
-    var antibioticResistances = function() {
-      var i, resistances = {}, props = Util.propertiesOf(Antibiotics);
-      for (i in props) {
-        resistances[props[i]] = (Math.random() < gameState.resistances[props[i]]) ? true : false;
-      };
-      return resistances;
+  //
+  // Randomly generates antiobiotics resistance for bacteria
+  //
+  var antibioticResistances = function() {
+    var i, resistances = {}, props = Util.propertiesOf(Antibiotics);
+    for (i in props) {
+      resistances[props[i]] = (Math.random() < gameState.resistances[props[i]]) ? true : false;
     };
+    return resistances;
+  };
 
-    var createGerm = function(o) {
-      var t = randomMultiplyTime(),
-          germData = { germId: (gameState.nextGermId += 1),
-                       multiplyAt: gameState.step + t,
-                       growthRate: growthRateForSteps(t),
-                       // either inherent or create for the first time
-                       resistances: (o.resistances || antibioticResistances()) },
-          germ = view.createGerm(o, germData);
-      gameState.germs.push(germ)
-      return germ;
-    };
+  var createGerm = function(o) {
+    var t = randomMultiplyTime(),
+        germData = { germId: (gameState.nextGermId += 1),
+                     multiplyAt: gameState.step + t,
+                     growthRate: growthRateForSteps(t),
+                     // either inherent or create for the first time
+                     resistances: (o.resistances || antibioticResistances()) },
+        germ = view.createGerm(o, germData);
+    gameState.germs.push(germ)
+    return germ;
+  };
 
-    var createGerms = function(n) {
-      var i;
-      for (i=0; i < n; i++) {
-        createGerm({x: width/2 + width/2*(Math.random() - 0.5),
-                    y: height*3/5,
-                    r: germSize * (0.8 + Math.random() * 0.4)});
+  var createGerms = function(n) {
+    var i;
+    for (i=0; i < n; i++) {
+      createGerm({x: width/2 + width/2*(Math.random() - 0.5),
+                  y: height*3/5,
+                  r: germSize * (0.8 + Math.random() * 0.4)});
+    }
+  };
+
+
+  var killGermAtPos = function(pos) {
+    var i, germ, numGerms = 0, toDelete = [];
+        // TODO: I really should be checking a bounding box, but instead
+        // I just check every object in the world.
+    for (i in gameState.germs) {
+      germ = gameState.germs[i];
+      if (germ.isAtPos(pos)) {
+        toDelete.push(parseInt(i));
+        germ.destroy();
+        gameState.score += 1;
+      } else {
+        numGerms += 1; // still alive
       }
-    };
-
-
-    var killGermAtPos = function(pos) {
-      var i, germ, numGerms = 0, toDelete = [];
-          // TODO: I really should be checking a bounding box, but instead
-          // I just check every object in the world.
-      for (i in gameState.germs) {
-        germ = gameState.germs[i];
-        if (germ.isAtPos(pos)) {
-          toDelete.push(parseInt(i));
-          germ.destroy();
-          gameState.score += 1;
-        } else {
-          numGerms += 1; // still alive
-        }
-      }
-
-      gameState.germs = Util.removeArrayElements(gameState.germs, toDelete);
-
-      if (numGerms === 0) {
-        gameState.condition = Condition.success;
-      }
-
-    };
-
-    var multiplyGerms = function() {
-      var i, germ, pos, count = 0, b, circleShape, r, t;
-
-      for (i in gameState.germs) {
-        germ     = gameState.germs[i];
-        germData = germ.getData();
-        count += 1;
-        if (germ.getPos().y < height/6) {
-          gameState.condition = Condition.failed;
-        }
-
-        if (gameState.step === germData.multiplyAt) {
-          pos = germ.getPos();
-          r   = germ.getRadius()/2;
-          germ.setRadius(r);
-          t = randomMultiplyTime();
-          germData.multiplyAt = gameState.step + t;
-          germData.growthRate = growthRateForSteps(t);
-          // create new germ. Inherits resistances
-          createGerm({x: pos.x+0.2, y: pos.y, r: r, resistances: germData.resistances});
-        }
-      }
-    };
-
-    var failedMessage = function() {
-      view.floatingMessage({ pos:       { x: width/2, y: height/5 },
-                             color:     "red",
-                             modifiers: "bold",
-                             font:      "Helvetica",
-                             size:       10,
-                             message:    "INFECTED!" });
-    };
-
-    var successMessage = function() {
-      view.floatingMessage({ pos:       { x: width/2, y: height/5 },
-                             color:     "green",
-                             modifiers: "bold",
-                             font:      "Helvetica",
-                             size:      7,
-                             message:   "Epidemic averted!"
-                             });
-
-      view.floatingMessage({ pos:       { x: width/2, y: height*2/5 },
-                             color:     "#333333",
-                             modifiers: "bold",
-                             font:      "Helvetica",
-                             size:      4,
-                             message:   "Tap to continue" });
-    };
-
-    var growGerms = function() {
-      var i, germ, germData;
-      for (i in gameState.germs) {
-        germ = gameState.germs[i];
-        germData = germ.getData();
-        germ.setRadius(germ.getRadius()*germData.growthRate);
-      }
-    };
-
-    var animate = function() {
-      var animateId;
-
-      gameState.step += 1;
-
-      view.stepPhysics(timeStep);
-      view.drawDebugData();
-
-      multiplyGerms();
-      view.updateScore(gameState.score);
-
-      if (!checkAndEnableAntibiotics()) {
-
-        switch (gameState.condition) {
-          case Condition.continuing:
-            growGerms();
-            animateId = setTimeout(animate, timeStep*1000);
-            gameState.animator = { animateFun: animate, animateId: animateId };
-            break;
-          case Condition.failed:
-            failedMessage();
-            break;
-          case Condition.success:
-            successMessage();
-            clickToStartNewGame();
-            break;
-        }
-      }
-    };
-
-
-    var checkAndEnableAntibiotics = function() {
-      var i, ab, abs = Util.propertiesOf(Antibiotics);
-      for (i in abs) {
-        ab = abs[i];
-        if (!gameState.activations[ab] && gameState.score >= Antibiotics[ab]) {
-          gameState.activations[ab] = true;
-          view.showAntibioticLink(ab);
-          pauseAndShowMessage('<p>Antibiotic "'+ ab +'" enabled!</p>' +
-            '<p>The percentage next to the antibiotic is the germ\'s natural chance of immunity.</p>' +
-            '<p>Each use of an antibiotic will increase the chance of immunity ' +
-            'in subsequent levels. Use sparingly!</p>');
-          return true;
-        }
-      }
-      return false;
     }
 
-    var resetHandler = function() {
-      view.clearMessage();
-      view.unbindAllHandlers();
-      view.clearAntibioticLinks();
-      destroy(); // destroy must come before initGameState()
-      initGameState();
-      start(1);
-    };
+    gameState.germs = Util.removeArrayElements(gameState.germs, toDelete);
 
-    ///////////////////////////////////////////////////////////////
+    if (numGerms === 0) {
+      gameState.condition = Condition.success;
+    }
+
+  };
+
+  var multiplyGerms = function() {
+    var i, germ, pos, count = 0, r, t;
+
+    for (i in gameState.germs) {
+      germ     = gameState.germs[i];
+      germData = germ.getData();
+      count += 1;
+      if (germ.getPos().y < height/6) {
+        gameState.condition = Condition.failed;
+      }
+
+      if (gameState.step === germData.multiplyAt) {
+        pos = germ.getPos();
+        r   = germ.getRadius()/2;
+        germ.setRadius(r);
+        t = randomMultiplyTime();
+        germData.multiplyAt = gameState.step + t;
+        germData.growthRate = growthRateForSteps(t);
+        // create new germ. Inherits resistances
+        createGerm({x: pos.x+0.2, y: pos.y, r: r, resistances: germData.resistances});
+      }
+    }
+  };
+
+  var failedMessage = function() {
+    view.floatingMessage({ pos:       { x: width/2, y: height/5 },
+                           color:     "red",
+                           modifiers: "bold",
+                           font:      "Helvetica",
+                           size:       10,
+                           message:    "INFECTED!" });
+  };
+
+
+  var successMessage = function() {
+    view.floatingMessage({ pos:       { x: width/2, y: height/5 },
+                           color:     "green",
+                           modifiers: "bold",
+                           font:      "Helvetica",
+                           size:      7,
+                           message:   "Epidemic averted!"
+                           });
+
+    view.floatingMessage({ pos:       { x: width/2, y: height*2/5 },
+                           color:     "#333333",
+                           modifiers: "bold",
+                           font:      "Helvetica",
+                           size:      4,
+                           message:   "Tap to continue" });
+  };
+
+  var growGerms = function() {
+    var i, germ, germData;
+    for (i in gameState.germs) {
+      germ = gameState.germs[i];
+      germData = germ.getData();
+      germ.setRadius(germ.getRadius()*germData.growthRate);
+    }
+  };
+
+  var animate = function() {
+    gameState.step += 1;
+
+    view.stepPhysics(timeStep);
+    view.drawDebugData();
+
+    multiplyGerms();
+    view.updateScore(gameState.score);
+
+    if (!checkAndEnableAntibiotics()) {
+
+      switch (gameState.condition) {
+        case Condition.continuing:
+          growGerms();
+          gameState.animator = view.schedule(animate, timeStep*1000);
+          break;
+        case Condition.failed:
+          failedMessage();
+          break;
+        case Condition.success:
+          successMessage();
+          clickToStartNewGame();
+          break;
+      }
+    }
+  };
+
+
+  var checkAndEnableAntibiotics = function() {
+    var i, ab, abs = Util.propertiesOf(Antibiotics);
+    for (i in abs) {
+      ab = abs[i];
+      if (!gameState.activations[ab] && gameState.score >= Antibiotics[ab]) {
+        gameState.activations[ab] = true;
+        view.showAntibioticLink(ab);
+        pauseAndShowMessage('<p>Antibiotic "'+ ab +'" enabled!</p>' +
+          '<p>The percentage next to the antibiotic is the germ\'s natural chance of immunity.</p>' +
+          '<p>Each use of an antibiotic will increase the chance of immunity ' +
+          'in subsequent levels. Use sparingly!</p>');
+        return true;
+      }
+    }
+    return false;
+  }
+
+  var resetHandler = function() {
+    view.clearMessage();
+    view.unbindAllHandlers();
+    view.clearAntibioticLinks();
+    destroy(); // destroy must come before initGameState()
+    initGameState();
+    start(1);
+  };
+
+
+  var start = function(startingGerms) {
     view.init(width);
     startingGerms = startingGerms || 1;
 
@@ -294,7 +290,7 @@ var Game = function (view) {
       $(document).unbindClickAndTouchstart(gameState.handler);
     }
     view.resetWorld();
-  }
+  };
 
   var initGameState = function() {
     var i, props = Util.propertiesOf(Antibiotics), ab;

@@ -92,15 +92,6 @@ var GameView = function($, Box2D, canvasSelector, jQueryExtend) {
     b2.world.SetDebugDraw(debugDraw);
   };
 
-  // FIXME: Just for debug
-  var numBodies = function() {
-    var body, n = 0;
-    for (body = b2.world.GetBodyList(); body; body = body.GetNext()) {
-      n += 1;
-    }
-    return n;
-  };
-
   var showMessage = function(message) {
     $('#message').html(message + '<p><a href="#" id="continue">Click here</a> to continue</p>');
     $('#message').show();
@@ -110,9 +101,6 @@ var GameView = function($, Box2D, canvasSelector, jQueryExtend) {
     $('#message').hide();
   };
 
-  var unschedule = function(animator) {
-    clearTimeout(animator.animateId);
-  };
 
   // 'width' is in metres
   var init = function(w) {
@@ -132,10 +120,32 @@ var GameView = function($, Box2D, canvasSelector, jQueryExtend) {
     $('#continue').clickOrTouchstart(handler);
   };
 
-  // schedule modifies 'animator'
-  var schedule = function(animator, millis) {
-    animator.animateId = setTimeout(animator.animateFun, millis);
+  //
+  // Schedules an 'animate' function to run every 'period' milliseconds.
+  // Returns an "animator" which is a data structure to manage animation
+  //
+  //
+  var schedule = function(animate, period) {
+    var animateId = setTimeout(animate, period);
+    return { animateFun: animate, animateId: animateId, period: period };
   };
+
+  //
+  // Takes the "animator" returned from function 'schedule' and
+  // reschedules the animation.
+  //
+  var reschedule = function(animator) {
+    animator.animateId = setTimeout(animator.animateFun, animator.period);
+  };
+
+  //
+  // Takes an "animator" argument and unschedules animation.
+  //
+  var unschedule = function(animator) {
+    clearTimeout(animator.animateId);
+  };
+
+
 
   var bindHandler = function(handler) {
     $(document).unbindClickAndTouchstart();
@@ -284,8 +294,6 @@ var GameView = function($, Box2D, canvasSelector, jQueryExtend) {
             heightInPixels:             (function() { return heightInPixels; }),
             widthInPixels:              (function() { return widthInPixels; }),
             createBeaker:               createBeaker,
-
-
             clearAntibioticLinks:       clearAntibioticLinks,
             // FIXME: The existence of both addAntibioticLink and showAntibioticLink
             // feels somehow superfluous to me. Shouldn't the just come into existence once?
@@ -306,16 +314,19 @@ var GameView = function($, Box2D, canvasSelector, jQueryExtend) {
             bindResetHandler:           bindResetHandler,
             setContinueAction:          setContinueAction,
             installContinueHandler:     installContinueHandler,
-            unschedule:                 unschedule,
+
+            // Scheduling, re-scheduling and unscheduling of animation
             schedule:                   schedule,
+            unschedule:                 unschedule,
+            reschedule:                 reschedule,
+
+            // Update score and level indicators
             updateScore:                updateScore,
             updateLevel:                updateLevel,
             floatingMessage:            floatingMessage,
-
+            // Returns a germ that conforms to Germ API
             createGerm:                 createGerm,
-
             stepPhysics:                stepPhysics,
-            drawDebugData:              drawDebugData,
-            numBodies:                  numBodies //FIXME: Remove
+            drawDebugData:              drawDebugData
           });
 };

@@ -1,16 +1,15 @@
 var Game = function (view) {
-  var Antibiotics = { Penicillin: 1, Ciprofloxacin: 20 };
+  var Antibiotics = { Penicillin: 5, Ciprofloxacin: 10 },
 //  var Antibiotics = { Penicillin: 50, Ciprofloxacin: 200 };
-  var width = 40;
-  var height = width/view.widthInPixels()*view.heightInPixels();
-  var gameState;
-  var germSize = 1;
-  var stepsInSecond = 30;
-  var timeStep = 1/stepsInSecond;
-  var doublingPeriod = 3; // in seconds (on average)
-  var resistanceIncrease = 1.1; // multiplier for resistance increase
-  var fsmHandler; // Finite State Machine handler
-
+      width              = 40,
+      height             = width/view.widthInPixels()*view.heightInPixels(),
+      germSize           = 1,
+      stepsInSecond      = 30,
+      timeStep           = 1/stepsInSecond,
+      doublingPeriod     = 3, // in seconds (on average)
+      resistanceIncrease = 1.1, // multiplier for resistance increase
+      gameState,
+      fsmHandler; // Finite State Machine handler
 
   var randomMultiplyTime = function() {
     // +1 is because it cannot be zero
@@ -29,7 +28,6 @@ var Game = function (view) {
     view.setContinueHandler(function() {
       gameState.subState.continueTapped = true;
     })
-
   };
 
   //
@@ -43,6 +41,9 @@ var Game = function (view) {
     return resistances;
   };
 
+  //
+  // Create a single germ. Not to be confused with 'createGerm' function of GameView
+  //
   var createGerm = function(o) {
     var t = randomMultiplyTime(),
         germData = { germId: (gameState.subState.nextGermId += 1),
@@ -55,11 +56,14 @@ var Game = function (view) {
     return germ;
   };
 
+  //
+  // Create 'n' germs and add to the world.
+  //
   var createGerms = function(n) {
     var i;
     for (i=0; i < n; i++) {
       createGerm({x: width/2 + width/2*(Math.random() - 0.5),
-                  y: height*3/5,
+                  y: height*3/5 + height/10*(Math.random() - 0.5),
                   r: germSize * (0.8 + Math.random() * 0.4)});
     }
   };
@@ -112,6 +116,9 @@ var Game = function (view) {
                            message:   "Tap to continue" });
   };
 
+  //
+  // Increases the size of germs. Should be called on every physics step.
+  //
   var growGerms = function() {
     var i, germ, germData;
     for (i in gameState.subState.germs) {
@@ -140,6 +147,9 @@ var Game = function (view) {
     start(1);
   };
 
+  //
+  // Inititalise a new level
+  //
   var initLevel = function(startingGerms) {
     gameState.subState = { germs:              [],
                            nextGermId:         0,
@@ -149,6 +159,15 @@ var Game = function (view) {
     gameState.subState.animator = view.schedule(animate, timeStep*1000);
   };
 
+  //
+  // getFSMHandler sets up the Finite State Machine for this game
+  // and returns the handler.
+  //
+  // This FSM has two types of FSM events 'levelStep' and 'touch'.
+  // The FSM handler should be called with the 'levelStep' event on
+  // every physics step, while the 'touch' event should be called
+  // whenever there is a 'touch' of any kind.
+  //
   var getFSMHandler = function() {
 
     var killGermsUnderTouches = function(gameState) {

@@ -111,13 +111,10 @@ var GameView = function($, Box2D, canvasSelector, jQueryExtend) {
     b2     = Box2DWorld(Box2D);
   };
 
-  var setContinueAction = function(handler, newHandler) {
-    $('#continue').unbindClickAndTouchstart(handler);
-    $(document).clickOrTouchstart(newHandler);
-  };
-
-  var installContinueHandler = function(handler) {
-    $('#continue').clickOrTouchstart(handler);
+  var setContinueHandler = function(handler) {
+    var el = $('#continue');
+    el.unbindClickAndTouchstart();
+    el.clickOrTouchstart(handler);
   };
 
   //
@@ -126,7 +123,7 @@ var GameView = function($, Box2D, canvasSelector, jQueryExtend) {
   //
   //
   var schedule = function(animate, period) {
-    var animateId = setTimeout(animate, period);
+    var animateId = setInterval(animate, period);
     return { animateFun: animate, animateId: animateId, period: period };
   };
 
@@ -135,14 +132,14 @@ var GameView = function($, Box2D, canvasSelector, jQueryExtend) {
   // reschedules the animation.
   //
   var reschedule = function(animator) {
-    animator.animateId = setTimeout(animator.animateFun, animator.period);
+    animator.animateId = setInterval(animator.animateFun, animator.period);
   };
 
   //
   // Takes an "animator" argument and unschedules animation.
   //
   var unschedule = function(animator) {
-    clearTimeout(animator.animateId);
+    clearInterval(animator.animateId);
   };
 
 
@@ -165,12 +162,12 @@ var GameView = function($, Box2D, canvasSelector, jQueryExtend) {
   // an object with field 'x' and 'y' in
   // the virtual co-ordinates.
   //
-  var bindPosHandler = function(handler) {
+  var bindTouchHandler = function(handler) {
     bindHandler(function(e) {
       var offset = $(canvasSelector).offset();
       var pos = { x : (e.pageX - offset.left)/scale,
                   y : (e.pageY - offset.top)/scale };
-      handler(pos);
+      handler([pos]);
     });
   };
 
@@ -310,10 +307,9 @@ var GameView = function($, Box2D, canvasSelector, jQueryExtend) {
             bindHandler:                bindHandler,
             unbindHandler:              unbindHandler,
             unbindAllHandlers:          unbindAllHandlers,
-            bindPosHandler:             bindPosHandler,
+            bindTouchHandler:           bindTouchHandler,
             bindResetHandler:           bindResetHandler,
-            setContinueAction:          setContinueAction,
-            installContinueHandler:     installContinueHandler,
+            setContinueHandler:         setContinueHandler,
 
             // Scheduling, re-scheduling and unscheduling of animation
             schedule:                   schedule,

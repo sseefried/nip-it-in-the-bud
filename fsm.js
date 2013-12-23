@@ -55,13 +55,16 @@ var FSM = function(selector, spec) {
 
     transitions = spec[eventType];
 
-    if ( transitions[state].unconditional ) {
-      transitions[state].unconditional(obj);
+    if ( transitions[state].unconditionals ) {
+      for (i in transitions[state].unconditionals ) {
+        transitions[state].unconditionals[i](obj);
+      }
     }
 
     for (i in ts = transitions[state].conditionals ) {
       if ( ts[i].transition(obj) ) {
         obj[selector] = ts[i].nextState
+        break;
       }
     }
   });

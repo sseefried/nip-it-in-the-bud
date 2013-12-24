@@ -35,6 +35,19 @@ var GameView = function($, Box2D, canvasSelector, jQueryExtend, GermAnim) {
     b2.createBody({x: o.x + (o.width - o.wallWidth)/2, y: o.y}, [ { shape: sideShape}]);
     b2.createBody({x: o.x, y: o.y + o.height/2}, [ { shape: baseShape }]);
 
+    var drawBeaker = function() {
+      var sf = widthInPixels/width;
+      context.fillRect( (o.x - o.width/2) * sf, (o.y - (o.wallWidth/2)+ o.height/2) * sf,
+                        o.width*sf, o.wallWidth*sf);
+      context.fillRect( (o.x - o.width/2) * sf, (o.y - (o.wallWidth/2) - o.height/2) * sf,
+                        o.wallWidth*sf, o.height*sf);
+      context.fillRect( (o.x - o.wallWidth + o.width/2) * sf, (o.y - (o.wallWidth/2) - o.height/2) * sf,
+                        o.wallWidth*sf, o.height*sf);
+
+    };
+
+    return({ drawBeaker: drawBeaker });
+
   };
 
 

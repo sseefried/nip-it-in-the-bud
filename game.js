@@ -8,6 +8,7 @@ var Game = function (view) {
       timeStep           = 1/stepsInSecond,
       doublingPeriod     = 3, // in seconds (on average)
       resistanceIncrease = 1.1, // multiplier for resistance increase
+      beaker,
       gameState,
       fsmHandler; // Finite State Machine handler
 
@@ -151,6 +152,7 @@ var Game = function (view) {
     view.clearCanvas();
 //    view.drawDebugData();
     var i, st = gameState.subState;
+    beaker.drawBeaker();
     for (i in st.germs) {
       st.germs[i].drawFrame();
     }
@@ -410,8 +412,9 @@ var Game = function (view) {
 
   var start = function() {
     view.init(width);
-    view.createBeaker({x: width/2, y: height/2, width: width*0.9, height: height*2/3,
-                       wallWidth: width/40});
+
+    beaker = view.createBeaker({x: width/2, y: height/2, width: width*0.9, height: height*2/3,
+                                wallWidth: width/40});
 
     view.updateLevel(1);
     view.unbindAllHandlers();

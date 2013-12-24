@@ -129,13 +129,13 @@ var Game = function (view) {
   };
 
   var animate = function() {
-    fsmHandler(gameState, "levelStep");
     gameState.subState.step += 1;
     multiplyGerms();
     growGerms();
     view.stepPhysics(timeStep);
-    view.drawDebugData();
     view.updateScore(gameState.score);
+    drawFrame();
+    fsmHandler(gameState, "levelStep"); // call to fsmHandler should be last
   };
 
   var resetHandler = function() {
@@ -145,6 +145,15 @@ var Game = function (view) {
     destroy(); // destroy must come before initGameState()
     initGameState();
     start(1);
+  };
+
+  var drawFrame = function() {
+    view.clearCanvas();
+//    view.drawDebugData();
+    var i, st = gameState.subState;
+    for (i in st.germs) {
+      st.germs[i].drawFrame();
+    }
   };
 
   //
@@ -186,7 +195,7 @@ var Game = function (view) {
           }
         }
         gameState.subState.germs = Util.removeArrayElements(gameState.subState.germs, toDelete);
-        view.drawDebugData();
+        drawFrame();
       }
     };
 
@@ -216,7 +225,7 @@ var Game = function (view) {
         view.updateAntibioticResistance(antibiotic, Util.resistanceString(newResist));
 
         gameState.antibioticsClicked = []; // clear all
-        view.drawDebugData();
+        drawFrame();
       }
     };
 
@@ -446,7 +455,7 @@ jQuery(document).ready(function() {
                .css('top', pos.top*2 + 0.2*min)
                .css('width', min*percent);
 
-  gameView = GameView($, Box2D, '#canvas', jQueryExtend);
+  gameView = GameView($, Box2D, '#canvas', jQueryExtend, GermAnim);
   game     = Game(gameView);
 //  $('#debug').html("height = " + window.innerHeight);
 

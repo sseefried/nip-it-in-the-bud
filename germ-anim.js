@@ -41,7 +41,6 @@ var GermAnim = function() {
   };
 
   var radialGradient = function(ctx, x, y, size, seed) {
-    console.log(ctx, x,y,size);
     var grd = ctx.createRadialGradient(x, y, 0, x, y, size);
 
     if (seed) {
@@ -146,7 +145,8 @@ var GermAnim = function() {
   };
 
 
-  var generate = function(seed, size) {
+
+  var generate = function(seed, size, rotation) {
 
     var circX = function(angle, radius) { return size/2 + Math.sin(angle) * radius; };
     var circY = function(angle, radius) { return size/2 + Math.cos(angle) * radius; };
@@ -154,6 +154,10 @@ var GermAnim = function() {
     var canvas   = document.createElement('canvas');
     canvas.width = canvas.height = size;
     var ctx      = canvas.getContext('2d');
+
+    ctx.translate(size/2, size/2);
+    ctx.rotate(rotation);
+    ctx.translate(-size/2, -size/2);
 
     var bg = radialGradient(ctx, size/2, size/2, size, seed.wall.fillStyle );
 
@@ -304,7 +308,10 @@ var GermAnim = function() {
   // Draws a single frame of the germ on 2D context 'ctx' and position (x,y)
   // with radius 'r' and rotation 'rotation'.
   var drawFrame = function(ctx, x, y, r, rotation) {
-    ctx.drawImage(generate(seed, r), x, y);
+    var imageCanvas = generate(seed, r*2, rotation),
+        imageCtx    = imageCanvas.getContext('2d');
+    ctx.drawImage(imageCanvas, x-r, y-r);
+
   };
 
   // The GermAnim API

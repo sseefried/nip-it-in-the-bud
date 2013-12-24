@@ -10,7 +10,7 @@
 // of a germ object inside the GameView. Each germ object must conform to the Germ API
 // detailed below (see function 'createGerm' for more details.)
 //
-var GameView = function($, Box2D, canvasSelector, jQueryExtend) {
+var GameView = function($, Box2D, canvasSelector, jQueryExtend, GermAnim) {
   jQueryExtend($);
   var canvas = $(canvasSelector)[0],
       context = canvas.getContext('2d'), // 2D canvas context
@@ -201,6 +201,7 @@ var GameView = function($, Box2D, canvasSelector, jQueryExtend) {
                                    friction: 1.0,
                                    restitution: 0.0,
                                    shape: new b2.CircleShape(o.r) }]);
+    var germAnim = GermAnim();
     body.SetUserData(data);
 
     var getData = function() {
@@ -219,6 +220,10 @@ var GameView = function($, Box2D, canvasSelector, jQueryExtend) {
     var setRadius = function(r) {
       var shape = body.GetFixtureList().GetShape();
       shape.SetRadius(r);
+    };
+
+    var getRotation = function() {
+      return body.GetAngle();
     };
 
     //
@@ -242,6 +247,11 @@ var GameView = function($, Box2D, canvasSelector, jQueryExtend) {
       return false;
     };
 
+    var drawFrame = function() {
+      var r = getRadius()*widthInPixels/width, pos  = getPos(), rotation = getRotation(),
+          rx = pos.x * widthInPixels/width, ry = pos.y * heightInPixels/height;
+      germAnim.drawFrame(context, rx, ry, r, rotation);
+    };
 
     //
     // The fields below are the definition of the Germ API.
@@ -251,9 +261,15 @@ var GameView = function($, Box2D, canvasSelector, jQueryExtend) {
              getPos:                     getPos,
              getRadius:                  getRadius,
              setRadius:                  setRadius,
+             getRotation:                getRotation,
+             drawFrame:                  drawFrame,
              destroy:                    destroy
            });
 
+  };
+
+  var clearCanvas = function() {
+    context.clearRect(0,0,widthInPixels,heightInPixels);
   };
 
   var stepPhysics = function(timeStep) {
@@ -323,6 +339,7 @@ var GameView = function($, Box2D, canvasSelector, jQueryExtend) {
             // Returns a germ that conforms to Germ API
             createGerm:                 createGerm,
             stepPhysics:                stepPhysics,
-            drawDebugData:              drawDebugData
+            drawDebugData:              drawDebugData,
+            clearCanvas:                clearCanvas
           });
 };

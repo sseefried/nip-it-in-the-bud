@@ -210,13 +210,13 @@ var GameView = function($, Box2D, canvasSelector, jQueryExtend, GermAnim) {
   //
   // The returned object conforms to the Germ API.
   //
-  var createGerm = function(o, data) {
+  var createGerm = function(o, data, newAnimFrameEvery) {
     var body = b2.createDynamicBody({x: o.x, y: o.y, angularDamping: 0.7},
                                 [{ density: 1.0,
                                    friction: 1.0,
                                    restitution: 0.0,
                                    shape: new b2.CircleShape(o.r) }]);
-    var germAnim = GermAnim();
+    var germAnim = GermAnim(newAnimFrameEvery);
     body.SetUserData(data);
 
     var getData = function() {

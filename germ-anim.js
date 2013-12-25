@@ -1,6 +1,12 @@
-var GermAnim = function() {
+//
+// 'newAnimFrameEvery' x frames. e.g. If 'newAnimFrameEvery === 5' then the germ
+// stays the same for 5 frames and then mutates
+//
+var GermAnim = function(newAnimFrameEvery) {
   var con = console;
   var pi2 = Math.PI*2;
+  var currentCanvas; // overwritten by 'generate'
+  var frameNumber = 0;
 
   // math
   function num(min,max) { return min + Math.random() * (max-min); }
@@ -150,11 +156,13 @@ var GermAnim = function() {
 
     var circX = function(angle, radius) { return size/2 + Math.sin(angle) * radius; };
     var circY = function(angle, radius) { return size/2 + Math.cos(angle) * radius; };
+    var ctx;
 
-    var canvas   = document.createElement('canvas');
-    canvas.width = canvas.height = size;
-    var ctx      = canvas.getContext('2d');
+    currentCanvas       = document.createElement('canvas');
+    currentCanvas.width = currentCanvas.height = size;
+    ctx                 = currentCanvas.getContext('2d');
 
+    // Rotate about centre of canvas by using translations
     ctx.translate(size/2, size/2);
     ctx.rotate(rotation);
     ctx.translate(-size/2, -size/2);
@@ -265,7 +273,6 @@ var GermAnim = function() {
       circle(ctx, x4, y4, wormSize / 2, wormColour );
 
     }
-    return canvas;
   };
 
   var createSeed = function() {
@@ -303,15 +310,21 @@ var GermAnim = function() {
 
   var seed = createSeed();
 
+  //
   // [ GermAnim API ]
   //
   // Draws a single frame of the germ on 2D context 'ctx' and position (x,y)
   // with radius 'r' and rotation 'rotation'.
+  //
   var drawFrame = function(ctx, x, y, r, rotation) {
-    var imageCanvas = generate(seed, r*2, rotation),
-        imageCtx    = imageCanvas.getContext('2d');
-    ctx.drawImage(imageCanvas, x-r, y-r);
-
+//    console.log(frameNumber % newAnimFrameEvery);
+    if (frameNumber % newAnimFrameEvery === 0) {
+      // frameNumber starts at 0
+      generate(seed, r*2, rotation);
+    }
+//    console.log(currentCanvas);
+    ctx.drawImage(currentCanvas, x-r, y-r);
+    frameNumber += 1;
   };
 
   // The GermAnim API

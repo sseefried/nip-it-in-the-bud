@@ -1,10 +1,11 @@
 var Game = function (view) {
-  var Antibiotics = { Penicillin: 5, Ciprofloxacin: 10 },
-//  var Antibiotics = { Penicillin: 50, Ciprofloxacin: 200 };
+//  var Antibiotics = { Penicillin: 5, Ciprofloxacin: 10 },
+  var Antibiotics = { Penicillin: 50, Ciprofloxacin: 200 },
       width              = 40,
       height             = width/view.widthInPixels()*view.heightInPixels(),
       germSize           = 1,
       stepsInSecond      = 30,
+      germAnimFramesInSecond = 7,
       timeStep           = 1/stepsInSecond,
       doublingPeriod     = 3, // in seconds (on average)
       resistanceIncrease = 1.1, // multiplier for resistance increase
@@ -52,7 +53,7 @@ var Game = function (view) {
                      growthRate: growthRateForSteps(t),
                      // either inherent or create for the first time
                      resistances: (o.resistances || antibioticResistances()) },
-        germ = view.createGerm(o, germData);
+        germ = view.createGerm(o, germData, Math.round(stepsInSecond/germAnimFramesInSecond));
     gameState.subState.germs.push(germ)
     return germ;
   };

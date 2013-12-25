@@ -429,7 +429,6 @@ var Game = function (view) {
     initLevel(1);
   };
 
-
   initGameState(); // called once when the game object is first created
 
   return ({
@@ -466,4 +465,3 @@ jQuery(document).ready(function() {
 //  game.pauseAndShowMessage("<p>Click on the germs to kill them!</p>");
 
 });
-

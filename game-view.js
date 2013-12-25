@@ -37,6 +37,7 @@ var GameView = function($, Box2D, canvasSelector, jQueryExtend, GermAnim) {
 
     var drawBeaker = function() {
       var sf = widthInPixels/width;
+      context.fillStyle = "rgb(80,80,80)";
       context.fillRect( (o.x - o.width/2) * sf, (o.y - (o.wallWidth/2)+ o.height/2) * sf,
                         o.width*sf, o.wallWidth*sf);
       context.fillRect( (o.x - o.width/2) * sf, (o.y - (o.wallWidth/2) - o.height/2) * sf,
@@ -106,6 +107,7 @@ var GameView = function($, Box2D, canvasSelector, jQueryExtend, GermAnim) {
   };
 
   var showMessage = function(message) {
+    $('#message').css("color", "rgb(128,128,128)");
     $('#message').html(message + '<p><a href="#" id="continue">Click here</a> to continue</p>');
     $('#message').show();
   };

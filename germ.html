@@ -7,7 +7,7 @@
 var con = console;
 
 
-var size = 250; //num(100,200);
+var size = num(100,400);
 
 
 
@@ -207,7 +207,11 @@ function generate( seed ) {
       var radOut = size * 0.25;
       var points = [];
       for ( var i = 0; i < blobPoints; i++ ) {
-        var angle = i / blobPoints * pi2;
+
+        // var angle = i / blobPoints * pi2; // standard
+        // var angle = (i + i%2) / blobPoints * pi2; // sawtooth
+        var angle = (i + (i%2 * 2) ) / blobPoints * pi2; // heavy sawtooth
+
         var radius = (i % 2) * radIn + radOut;
 
         points[i] = {
@@ -242,18 +246,26 @@ function generate( seed ) {
   // draw blob
 
   var blobPoints = 10;
-  var points = [];
+  var vacuole = [];
+  var membrane = [];
   for ( var i = 0; i < blobPoints; i++ ) {
     var angle = i / blobPoints * pi2;
-    var radius = num(size / 2 * 0.2, size / 2 * 0.6);
-    points[i] = {
-      x:circX(angle,radius),
-      y:circY(angle,radius)
+    var radiusVacuole = num(size / 2 * 0.2, size / 2 * 0.6);
+    var radiusMembrane = num(radiusVacuole * 0.2, radiusVacuole * 0.9);
+    vacuole[i] = {
+      x:circX(angle, radiusVacuole),
+      y:circY(angle, radiusVacuole)
+    };
+    membrane[i] = {
+      x:circX(angle, radiusMembrane),
+      y:circY(angle, radiusMembrane)
     };
     // store points for later and manipulate shape of blob?
   }
 
-  blob(d, points, seed.vacuole); // use points average for centre?
+  blob(d, vacuole, seed.vacuole); // use points average for centre?
+
+  blob(d, membrane, seed.membrane); // use points average for centre?
 
 
 
@@ -280,10 +292,10 @@ function generate( seed ) {
   // draw worms
 
   seed.golgiapparatus.number = mutateNum(seed.golgiapparatus.number, 2);
-  seed.golgiapparatus.lineWidth = 1;//mutateNum(seed.golgiapparatus.lineWidth, 2);
+  seed.golgiapparatus.lineWidth = mutateNum(seed.golgiapparatus.lineWidth, 2);
   seed.golgiapparatus.strokeStyle = colour(seed.golgiapparatus.strokeStyle);
 
-  var golgiapparatus = 1;//30;//Math.round(seed.golgiapparatus.number);
+  var golgiapparatus = Math.round(seed.golgiapparatus.number);
 
   for (var i = 0; i < golgiapparatus; i++) {
     var angle = num(0, pi2);
@@ -331,7 +343,7 @@ function generate( seed ) {
 }
 
 
-var numGerms = 1
+var numGerms = 4;
 
 var germs = [];
 for ( var i = 0; i < numGerms; i++ ) {
@@ -342,7 +354,9 @@ for ( var i = 0; i < numGerms; i++ ) {
       fillStyle: {
         inner: colour(),
         outer: colour()
-      } 
+      },
+      lineWidth: num(4,10),
+      strokeStyle: colour()
     },
     nucleus: {
       fillStyle: colour(),
@@ -362,6 +376,14 @@ for ( var i = 0; i < numGerms; i++ ) {
         outer: colour()
       },
       lineWidth: num(4,20),
+      strokeStyle: colour()
+    },
+    membrane: {
+      fillStyle: {
+        inner: colour(),
+        outer: colour()
+      },
+      lineWidth: num(2,10),
       strokeStyle: colour()
     }
   }
@@ -384,7 +406,7 @@ function draw() {
   out.innerHTML = germs[0].nucleus.number;
 
 
-  setTimeout(draw, 200)
+  setTimeout(draw, 120);
 }
 draw();
 

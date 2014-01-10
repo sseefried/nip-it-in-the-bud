@@ -50,7 +50,7 @@ var Game = function (view) {
   //
   var createGerm = function(o) {
 
-    con.log("createGerm", o)
+    // con.log("createGerm", o)
 
     var t = randomMultiplyTime(),
         germData = { germId: (gameState.subState.nextGermId += 1),

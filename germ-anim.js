@@ -280,7 +280,7 @@ var GermAnim = function(newAnimFrameEvery) {
   };
 
   var createSeed = function() {
-    con.log("createSeed")
+    // con.log("createSeed")
     return({ wall: {
                 type: int(0, 2),
                 microvillus: int(5, 16), // bumps is double this.

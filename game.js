@@ -1,3 +1,5 @@
+var con = console;
+
 var Game = function (view) {
 //  var Antibiotics = { Penicillin: 5, Ciprofloxacin: 10 },
   var Antibiotics = { Penicillin: 50, Ciprofloxacin: 200 },
@@ -47,6 +49,9 @@ var Game = function (view) {
   // Create a single germ. Not to be confused with 'createGerm' function of GameView
   //
   var createGerm = function(o) {
+
+    con.log("createGerm", o)
+
     var t = randomMultiplyTime(),
         germData = { germId: (gameState.subState.nextGermId += 1),
                      multiplyAt: gameState.subState.step + t,

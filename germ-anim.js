@@ -2,6 +2,10 @@
 // 'newAnimFrameEvery' x frames. e.g. If 'newAnimFrameEvery === 5' then the germ
 // stays the same for 5 frames and then mutates
 //
+
+//TODO
+var seed;
+
 var GermAnim = function(newAnimFrameEvery) {
   var con = console;
   var pi2 = Math.PI*2;
@@ -104,7 +108,7 @@ var GermAnim = function(newAnimFrameEvery) {
       }
     }
     dots(fill,0);
-    dots("rgba(255,255,255,1)",1);
+    dots("rgba(0,0,0,1)",1);
 
     ctx.restore();
   };
@@ -152,7 +156,7 @@ var GermAnim = function(newAnimFrameEvery) {
 
 
 
-  var generate = function(seed, size, rotation) {
+  var generate = function(seed2, size, rotation) {
 
     var circX = function(angle, radius) { return size/2 + Math.sin(angle) * radius; };
     var circY = function(angle, radius) { return size/2 + Math.cos(angle) * radius; };
@@ -276,6 +280,7 @@ var GermAnim = function(newAnimFrameEvery) {
   };
 
   var createSeed = function() {
+    con.log("createSeed")
     return({ wall: {
                 type: int(0, 2),
                 microvillus: int(5, 16), // bumps is double this.
@@ -308,7 +313,9 @@ var GermAnim = function(newAnimFrameEvery) {
   };
 
 
-  var seed = createSeed();
+  // var seed = createSeed();
+  if (seed == undefined) seed = createSeed();
+  //TODO ok, sean, this is basic, but i couldn't get my head around passing the seed to the next child - within the limited time i had (lunchbreak)
 
   //
   // [ GermAnim API ]
@@ -318,16 +325,33 @@ var GermAnim = function(newAnimFrameEvery) {
   //
   var drawFrame = function(ctx, x, y, r, rotation) {
 //    console.log(frameNumber % newAnimFrameEvery);
-    if (frameNumber % newAnimFrameEvery === 0) {
+    //if (frameNumber % newAnimFrameEvery === 0) {
+    if (frameNumber === 0) {
       // frameNumber starts at 0
-      generate(seed, r*2, rotation);
+      generate(seed, r*5, rotation);
     }
-//    console.log(currentCanvas);
-    ctx.drawImage(currentCanvas, x-r, y-r);
+    // console.log(rotation);
+
+    ctx.save();
+    ctx.translate(x,y)
+    ctx.rotate(rotation)
+    ctx.translate(-x,-y)
+
+    // ctx.fillStyle = "red"
+    // ctx.fillRect(x - r, y - r, r * 2, r * 2)
+    // circle(ctx, x, y, r, "red");
+
+    ctx.drawImage(currentCanvas, x-r, y-r, r * 2, r * 2);
+
+    ctx.restore();
+
     frameNumber += 1;
   };
 
   // The GermAnim API
-  return({ drawFrame: drawFrame });
+  return({ 
+    drawFrame: drawFrame,
+    seed: seed
+   });
 
 };

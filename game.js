@@ -297,6 +297,8 @@ var Game = function (view) {
     };
 
     var nextLevelTransition = function(gameState) {
+      //TODO
+      seed = null;
       view.clearMessage();
       initLevel(gameState.currentLevel += 1);
       return true;

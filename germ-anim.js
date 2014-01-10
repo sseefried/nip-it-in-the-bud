@@ -4,7 +4,7 @@
 //
 
 //TODO
-var seed;
+var seed = null;
 
 var GermAnim = function(newAnimFrameEvery) {
   var con = console;

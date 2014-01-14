@@ -208,15 +208,20 @@ var GameView = function($, Box2D, canvasSelector, jQueryExtend, GermAnim) {
   // 'data' is arbitrary user data associated with the
   // germ.
   //
+  // 'genetics' is an optional parameter. It is not required
+  // but can be pulled from another germ using the "getGenetics"
+  // method.
+  //
   // The returned object conforms to the Germ API.
   //
-  var createGerm = function(o, data, newAnimFrameEvery) {
+
+  var createGerm = function(o, data, newAnimFrameEvery, genetics) {
     var body = b2.createDynamicBody({x: o.x, y: o.y, angularDamping: 0.7},
                                 [{ density: 1.0,
                                    friction: 1.0,
                                    restitution: 0.0,
                                    shape: new b2.CircleShape(o.r) }]);
-    var germAnim = GermAnim(newAnimFrameEvery);
+    var germAnim = GermAnim(newAnimFrameEvery, genetics);
     body.SetUserData(data);
 
     var getData = function() {
@@ -268,6 +273,10 @@ var GameView = function($, Box2D, canvasSelector, jQueryExtend, GermAnim) {
       germAnim.drawFrame(context, rx, ry, r, rotation);
     };
 
+    var getGenetics = function() {
+      return germAnim.seed;
+    };
+
     //
     // The fields below are the definition of the Germ API.
     //
@@ -277,6 +286,7 @@ var GameView = function($, Box2D, canvasSelector, jQueryExtend, GermAnim) {
              getRadius:                  getRadius,
              setRadius:                  setRadius,
              getRotation:                getRotation,
+             getGenetics:                getGenetics,
              drawFrame:                  drawFrame,
              destroy:                    destroy
            });

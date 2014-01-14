@@ -3,10 +3,10 @@
 // stays the same for 5 frames and then mutates
 //
 
-//TODO
-var seed = null;
-
-var GermAnim = function(newAnimFrameEvery) {
+//
+// 'seed' is an optional parameter. If we leave it off then a random
+// seed is generated.
+var GermAnim = function(newAnimFrameEvery, seed) {
   var con = console;
   var pi2 = Math.PI*2;
   var currentCanvas; // overwritten by 'generate'
@@ -313,10 +313,6 @@ var GermAnim = function(newAnimFrameEvery) {
   };
 
 
-  // var seed = createSeed();
-  if (seed == undefined) seed = createSeed();
-  //TODO ok, sean, this is basic, but i couldn't get my head around passing the seed to the next child - within the limited time i had (lunchbreak)
-
   //
   // [ GermAnim API ]
   //
@@ -348,10 +344,13 @@ var GermAnim = function(newAnimFrameEvery) {
     frameNumber += 1;
   };
 
+  // Initialisation
+  if (seed === undefined) { seed = createSeed(); }
+
   // The GermAnim API
-  return({ 
+  return({
     drawFrame: drawFrame,
-    seed: seed
+    seed:      seed
    });
 
 };

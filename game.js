@@ -46,22 +46,32 @@ var Game = function (view) {
   };
 
   //
-  // Create a single germ. Not to be confused with 'createGerm' function of GameView
+  // Auxilliary helper function for creating germs.
+  // 'genetics' is an optional parameter
   //
-  var createGerm = function(o) {
-
-    // con.log("createGerm", o)
-
+  var createGermAux = function(o, genetics) {
     var t = randomMultiplyTime(),
         germData = { germId: (gameState.subState.nextGermId += 1),
                      multiplyAt: gameState.subState.step + t,
                      growthRate: growthRateForSteps(t),
                      // either inherent or create for the first time
                      resistances: (o.resistances || antibioticResistances()) },
-        germ = view.createGerm(o, germData, Math.round(stepsInSecond/germAnimFramesInSecond));
+        germ = view.createGerm(o,
+                               germData,
+                               Math.round(stepsInSecond/germAnimFramesInSecond),
+                               genetics);
     gameState.subState.germs.push(germ)
     return germ;
   };
+
+  //
+  // Create a single germ. Not to be confused with 'createGerm' function of GameView
+  //
+  var createGerm = function(o) {
+    createGermAux(o);
+  };
+
+  var createGermWithGenetics = createGermAux;
 
   //
   // Create 'n' germs and add to the world.
@@ -92,7 +102,8 @@ var Game = function (view) {
         germData.multiplyAt = st.step + t;
         germData.growthRate = growthRateForSteps(t);
         // create new germ. Inherits resistances
-        createGerm({x: pos.x+0.2, y: pos.y, r: r, resistances: germData.resistances});
+        createGermWithGenetics({x: pos.x+0.2, y: pos.y, r: r, resistances: germData.resistances},
+                                germ.getGenetics());
       }
     }
   };

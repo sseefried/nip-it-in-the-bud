@@ -98,10 +98,19 @@ var Game = function (view) {
         pos = germ.getPos();
         r   = germ.getRadius()/2;
         germ.setRadius(r);
+
+        //TODO you are modifying the existing germ (parent here) to make it half size.
+        // instead you should destroy the original and make two children. obviously the count will remain the same (-1 + 2 = +1)
+        // but two new children should be made.
+
         t = randomMultiplyTime();
         germData.multiplyAt = st.step + t;
         germData.growthRate = growthRateForSteps(t);
-        // create new germ. Inherits resistances
+
+        var g = germ.getGenetics();
+        con.log("new germ", g.id, g); //TODO also these ids seem to grow, but surely an older germ that is growing slowly (with a lower Id) should cause a new germ every now and then?
+
+        // create new germ. Inherits resistances and genetics
         createGermWithGenetics({x: pos.x+0.2, y: pos.y, r: r, resistances: germData.resistances},
                                 germ.getGenetics());
       }
@@ -309,7 +318,7 @@ var Game = function (view) {
 
     var nextLevelTransition = function(gameState) {
       //TODO
-      seed = null;
+      // seed = null;
       view.clearMessage();
       initLevel(gameState.currentLevel += 1);
       return true;

@@ -6,6 +6,7 @@
 //
 // 'seed' is an optional parameter. If we leave it off then a random
 // seed is generated.
+
 var GermAnim = function(newAnimFrameEvery, seed) {
   var con = console;
   var pi2 = Math.PI*2;
@@ -31,7 +32,8 @@ var GermAnim = function(newAnimFrameEvery, seed) {
     function rgba(base) {
       var num = 0
       if (base != undefined) {
-        num = mutateInt(base, 10);
+        num = mutateInt(base, 20);
+        //num = base + 2
       } else {
         num = int(0,255);
       }
@@ -156,7 +158,7 @@ var GermAnim = function(newAnimFrameEvery, seed) {
 
 
 
-  var generate = function(seed2, size, rotation) {
+  var generate = function(seed, size, rotation) {
 
     var circX = function(angle, radius) { return size/2 + Math.sin(angle) * radius; };
     var circY = function(angle, radius) { return size/2 + Math.cos(angle) * radius; };
@@ -277,11 +279,16 @@ var GermAnim = function(newAnimFrameEvery, seed) {
       circle(ctx, x4, y4, wormSize / 2, wormColour );
 
     }
-  };
 
+    seed.id ++;
+
+  };
+ 
   var createSeed = function() {
-    // con.log("createSeed")
-    return({ wall: {
+    con.log("createSeed")
+    return({ 
+              id: 0,
+              wall: {
                 type: int(0, 2),
                 microvillus: int(5, 16), // bumps is double this.
                 fillStyle: {
